@@ -25,12 +25,12 @@
 import unittest
 from pxr import Usd, Sdf, Kind
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class TestUsdModel(unittest.TestCase):
     def test_ModelKind(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestModelKind.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestModelKind.{fmt}')
             p = s.DefinePrim('/World', 'Xform')
             model = Usd.ModelAPI(p)
             self.assertEqual(model.GetKind(), '')
@@ -54,7 +54,7 @@ class TestUsdModel(unittest.TestCase):
 
     def test_ModelHierarchy(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestModelHierarchy.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestModelHierarchy.{fmt}')
             x = s.DefinePrim('/X', 'Scope')
             y = s.DefinePrim('/X/Y', 'Scope')
             z = s.DefinePrim('/X/Y/Z', 'Scope')
@@ -97,7 +97,7 @@ class TestUsdModel(unittest.TestCase):
 
     def test_AssetInfo(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestAssetInfo.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestAssetInfo.{fmt}')
             p = s.DefinePrim('/World', 'Xform')
             model = Usd.ModelAPI(p)
 
@@ -143,7 +143,7 @@ class TestUsdModel(unittest.TestCase):
     # currently possible.
     def test_ModelAPI(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestModelAPI.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestModelAPI.{fmt}')
             p = s.DefinePrim('/World', 'Xform')
             model = Usd.ModelAPI(p)
             self.assertEqual(model.GetKind(), '')

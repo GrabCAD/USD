@@ -92,10 +92,10 @@ class JumpToEnclosingModelItem(PrimContextMenuItem):
     def IsEnabled(self):
         from common import GetEnclosingModelPrim
 
-        for p in self._selectionDataModel.getPrims():
-            if GetEnclosingModelPrim(p) is not None:
-                return True
-        return False
+        return any(
+            GetEnclosingModelPrim(p) is not None
+            for p in self._selectionDataModel.getPrims()
+        )
 
     def GetText(self):
         return "Jump to Enclosing Model"
@@ -125,13 +125,10 @@ class SelectBoundPreviewMaterialMenuItem(PrimContextMenuItem):
         return bool(self._boundPreviewMaterial)
 
     def GetText(self):
-        if self._boundPreviewMaterial:
-            isPreviewBindingRel = 'preview' in self._bindingRel.SplitName()
-            return "Select Bound Preview Material (%s%s)" % (
-            self._boundPreviewMaterial.GetPrim().GetName(),
-            "" if isPreviewBindingRel else " from generic binding")
-        else:
+        if not self._boundPreviewMaterial:
             return "Select Bound Preview Material (None)"
+        isPreviewBindingRel = 'preview' in self._bindingRel.SplitName()
+        return f'Select Bound Preview Material ({self._boundPreviewMaterial.GetPrim().GetName()}{"" if isPreviewBindingRel else " from generic binding"})'
 
     def RunCommand(self):
         self._appController.selectBoundPreviewMaterial()
@@ -158,13 +155,10 @@ class SelectBoundFullMaterialMenuItem(PrimContextMenuItem):
         return bool(self._boundFullMaterial)
 
     def GetText(self):
-        if self._boundFullMaterial:
-            isFullBindingRel = 'full' in self._bindingRel.SplitName()
-            return "Select Bound Full Material (%s%s)" % (
-            self._boundFullMaterial.GetPrim().GetName(),
-            "" if isFullBindingRel else " from generic binding")
-        else:
+        if not self._boundFullMaterial:
             return "Select Bound Full Material (None)"
+        isFullBindingRel = 'full' in self._bindingRel.SplitName()
+        return f'Select Bound Full Material ({self._boundFullMaterial.GetPrim().GetName()}{"" if isFullBindingRel else " from generic binding"})'
 
     def RunCommand(self):
         self._appController.selectBoundFullMaterial()
@@ -182,8 +176,7 @@ class ActiveMenuItem(PrimContextMenuItem):
             return "Activate"
 
     def RunCommand(self):
-        active = self._selectionDataModel.getFocusPrim().IsActive()
-        if active:
+        if active := self._selectionDataModel.getFocusPrim().IsActive():
             self._appController.deactivateSelectedPrims()
         else:
             self._appController.activateSelectedPrims()
@@ -200,8 +193,7 @@ class ToggleVisibilityMenuItem(PrimContextMenuItem):
         self._imageable = False
         self._isVisible = False
         for prim in self._selectionDataModel.getPrims():
-            imgbl = UsdGeom.Imageable(prim)
-            if imgbl:
+            if imgbl := UsdGeom.Imageable(prim):
                 self._imageable = True
                 self._isVisible = (imgbl.ComputeVisibility(self._currentFrame)
                                    == UsdGeom.Tokens.inherited)
@@ -227,10 +219,10 @@ class VisOnlyMenuItem(PrimContextMenuItem):
 
     def IsEnabled(self):
         from pxr import UsdGeom
-        for prim in self._selectionDataModel.getPrims():
-            if prim.IsA(UsdGeom.Imageable):
-                return True
-        return False
+        return any(
+            prim.IsA(UsdGeom.Imageable)
+            for prim in self._selectionDataModel.getPrims()
+        )
 
     def GetText(self):
         return "Vis Only"
@@ -245,11 +237,7 @@ class RemoveVisMenuItem(PrimContextMenuItem):
 
     def IsEnabled(self):
         from common import HasSessionVis
-        for prim in self._selectionDataModel.getPrims():
-            if HasSessionVis(prim):
-                return True
-
-        return False
+        return any(HasSessionVis(prim) for prim in self._selectionDataModel.getPrims())
 
     def GetText(self):
         return "Remove Session Visibility"
@@ -324,8 +312,8 @@ class CopyModelPathMenuItem(PrimContextMenuItem):
         return self._modelPrim
 
     def GetText(self):
-        name = ( "(%s)" % self._modelPrim.GetName() ) if self._modelPrim else ""
-        return "Copy Enclosing Model %s Path" % name
+        name = f"({self._modelPrim.GetName()})" if self._modelPrim else ""
+        return f"Copy Enclosing Model {name} Path"
 
     def RunCommand(self):
         modelPath = str(self._modelPrim.GetPath())
@@ -350,7 +338,7 @@ class IsolateCopyPrimMenuItem(PrimContextMenuItem):
 
         inFile = focusPrim.GetScene().GetUsdFile()
 
-        guessOutFile = os.getcwd() + "/" + focusPrim.GetName() + "_copy.usd"
+        guessOutFile = f"{os.getcwd()}/{focusPrim.GetName()}_copy.usd"
         (outFile, _) = QtWidgets.QFileDialog.getSaveFileName(None,
             "Specify the Usd file to create", guessOutFile, 'Usd files (*.usd)')
         if (outFile.rsplit('.')[-1] != 'usd'):
@@ -360,13 +348,12 @@ class IsolateCopyPrimMenuItem(PrimContextMenuItem):
             sys.stderr.write( "Cannot isolate a copy to the source usd!\n" )
             return
 
-        sys.stdout.write( "Writing copy to new file '%s' ... " % outFile )
+        sys.stdout.write(f"Writing copy to new file '{outFile}' ... ")
         sys.stdout.flush()
 
-        os.system( 'usdcopy -inUsd ' + inFile +
-                ' -outUsd ' + outFile + ' ' +
-                ' -sourcePath ' + focusPrim.GetPath() + '; ' +
-                'usdview ' + outFile + ' &')
+        os.system(
+            f'usdcopy -inUsd {inFile} -outUsd {outFile}  -sourcePath {focusPrim.GetPath()}; usdview {outFile} &'
+        )
 
         sys.stdout.write( "Done!\n" )
 
@@ -397,8 +384,7 @@ class IsolateAssetMenuItem(PrimContextMenuItem):
                 # from pxr import Ar
                 # identifier = Ar.GetResolver().Resolve("", identifier.path)
                 from pxr import Sdf
-                layer = Sdf.Layer.Find(identifier.path)
-                if layer:
+                if layer := Sdf.Layer.Find(identifier.path):
                     self._assetName = name
                     self._filePath = layer.realPath
 
@@ -406,8 +392,8 @@ class IsolateAssetMenuItem(PrimContextMenuItem):
         return self._assetName
 
     def GetText(self):
-        name = ( " '%s'" % self._assetName ) if self._assetName else ""
-        return "usdview asset%s" % name
+        name = f" '{self._assetName}'" if self._assetName else ""
+        return f"usdview asset{name}"
 
     def RunCommand(self):
         print "Spawning usdview %s" % self._filePath

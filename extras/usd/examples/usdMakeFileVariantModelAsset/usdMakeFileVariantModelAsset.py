@@ -159,18 +159,18 @@ if __name__ == "__main__":
         "'variantFile1'")
 
     args = parser.parse_args()
-    
+
     if not args.assetName or args.assetName == '':
         parser.error("No assetName specified")
-    
-    stage = CreateModelStage(args.assetName,
-                             assetIdentifier=args.identifier,
-                             kind=args.kind,
-                             filesToReference=args.variantFiles,
-                             variantSetName=args.variantSet,
-                             defaultVariantSelection=args.defaultVariantSelection)
-    
-    if stage:
+
+    if stage := CreateModelStage(
+        args.assetName,
+        assetIdentifier=args.identifier,
+        kind=args.kind,
+        filesToReference=args.variantFiles,
+        variantSetName=args.variantSet,
+        defaultVariantSelection=args.defaultVariantSelection,
+    ):
         stage.GetRootLayer().Save()
         exit(0)
     else:

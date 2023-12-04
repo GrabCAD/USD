@@ -102,18 +102,12 @@ class AdjustClipping(QtWidgets.QDialog):
     def _overrideNearToggled(self, state):
         """Called when the "Override Near" checkbox is toggled"""
         self._ui.nearEdit.setEnabled(state)
-        if state:
-            self._dataModel.overrideNear = self._nearCache
-        else:
-            self._dataModel.overrideNear = None
+        self._dataModel.overrideNear = self._nearCache if state else None
 
     def _overrideFarToggled(self, state):
         """Called when the "Override Far" checkbox is toggled"""
         self._ui.farEdit.setEnabled(state)
-        if state:
-            self._dataModel.overrideFar = self._farCache
-        else:
-            self._dataModel.overrideFar = None
+        self._dataModel.overrideFar = self._farCache if state else None
 
     def _nearChanged(self, text):
         """Called when the Near text box changed.  This can happen when we

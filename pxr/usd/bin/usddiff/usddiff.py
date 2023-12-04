@@ -52,8 +52,7 @@ def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
 
 def _findExe(name):
     from distutils.spawn import find_executable
-    cmd = find_executable(name)
-    if cmd:
+    if cmd := find_executable(name):
         return cmd
     if isWindows:
         # find_executable under Windows only returns *.EXE files
@@ -79,8 +78,7 @@ def _findDiffTools():
     # prefer USD_DIFF, then DIFF, else use the internal unified diff.
     diffCmd = (os.environ.get('USD_DIFF') or os.environ.get('DIFF'))
     if diffCmd and not _findExe(diffCmd):
-        _exit("Error: Failed to find diff tool %s." % (diffCmd, ),
-              ERROR_EXIT_CODE)
+        _exit(f"Error: Failed to find diff tool {diffCmd}.", ERROR_EXIT_CODE)
 
     return (usdcatCmd, diffCmd)
 
@@ -102,15 +100,12 @@ def _getFileFormat(path):
         versionSpecifierPos = prunedExtension.rfind('#')
         if versionSpecifierPos != -1:
             prunedExtension = prunedExtension[:versionSpecifierPos]
-         
+
         fileFormat = Sdf.FileFormat.FindByExtension(prunedExtension)
 
     # Don't check if file exists - this should be handled by resolver (and
     # path may not exist / have been fetched yet)
-    if fileFormat:
-        return fileFormat.formatId
-
-    return None
+    return fileFormat.formatId if fileFormat else None
 
 def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
     # Just copy empty files -- we want something to diff against but
@@ -134,9 +129,11 @@ def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, flattened):
         _exit('Error: Cannot write out flattened result.', ERROR_EXIT_CODE)
 
     if not os.access(fileName, os.W_OK):
-        _exit('Error: Cannot write to %s, insufficient permissions' % fileName,
-              ERROR_EXIT_CODE)
-    
+        _exit(
+            f'Error: Cannot write to {fileName}, insufficient permissions',
+            ERROR_EXIT_CODE,
+        )
+
     return _convertTo(tempFileName, fileName, usdcatCmd, flatten=None, fmt=fileType)
 
 def _runDiff(baseline, comparison, flatten, noeffect):
@@ -275,19 +272,21 @@ def _findFiles(args):
         dirpath = args[0]
         files = set(map(os.path.relpath, args[1:]))
         dirfiles = listFiles(dirpath)
-        return ([], 
-                [(join(dirpath, p), p) for p in files & dirfiles],
-                [p for p in files - dirfiles])
-    # FILES... DIR
+        return (
+            [],
+            [(join(dirpath, p), p) for p in files & dirfiles],
+            list(files - dirfiles),
+        )
     elif not any(map(isdir, stats[:-1])) and isdir(stats[-1]):
         validateFiles()
         dirpath = args[-1]
         files = set(map(os.path.relpath, args[:-1]))
         dirfiles = listFiles(dirpath)
-        return ([p for p in files - dirfiles],
-                [(p, join(dirpath, p)) for p in files & dirfiles],
-                [])
-    # FILE FILE or DIR DIR
+        return (
+            list(files - dirfiles),
+            [(p, join(dirpath, p)) for p in files & dirfiles],
+            [],
+        )
     elif len(args) == 2:
         # DIR DIR
         if all(map(isdir, stats)):

@@ -120,10 +120,7 @@ class UsdviewApi(object):
         """The width and height of the viewport in pixels."""
 
         stageView = self.__appController._stageView
-        if stageView is not None:
-            return stageView.width(), stageView.height()
-        else:
-            return 0, 0
+        return (0, 0) if stageView is None else (stageView.width(), stageView.height())
 
     @property
     def configDir(self):
@@ -170,13 +167,8 @@ class UsdviewApi(object):
     def ComputeSelectedPrimsOfType(self, schemaType):
         """Returns selected prims of the provided schemaType (TfType)."""
 
-        prims = []
         items = self.__appController.getSelectedItems()
-        for item in items:
-            if item.prim.IsA(schemaType):
-                prims.append(item.prim)
-
-        return prims
+        return [item.prim for item in items if item.prim.IsA(schemaType)]
 
     def UpdateGUI(self):
         """Updates the main UI views"""

@@ -73,9 +73,8 @@ class Settings(dict):
         if self._ephemeral:
             return
         try:
-            f = open(self._filename, "w")
-            dump(self, f)
-            f.close()
+            with open(self._filename, "w") as f:
+                dump(self, f)
         except:
             if ignoreErrors:
                 return False
@@ -88,10 +87,8 @@ class Settings(dict):
         if self._ephemeral:
             return
         try:
-            f = open(self._filename, "r")
-            self.update(load(f))
-            f.close()
-
+            with open(self._filename, "r") as f:
+                self.update(load(f))
         except:
             if ignoreErrors:
                 return False

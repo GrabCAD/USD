@@ -31,10 +31,11 @@ class TestUsdDataFormats(unittest.TestCase):
     def test_PseudoRoot(self):
         """Verify that pseudoroots report that they does not have specifiers with all file formats"""
         for fmt in allFormats:
-            layer = Sdf.Layer.CreateAnonymous('pseudoroot.' + fmt)
-            assert layer, 'Could not create ' + fmt + ' layer'
-            assert not layer.pseudoRoot.HasInfo('specifier'), \
-                fmt + ' layer reports unexpected pseudoroot specifier'
+            layer = Sdf.Layer.CreateAnonymous(f'pseudoroot.{fmt}')
+            assert layer, f'Could not create {fmt} layer'
+            assert not layer.pseudoRoot.HasInfo(
+                'specifier'
+            ), f'{fmt} layer reports unexpected pseudoroot specifier'
             prim = Sdf.PrimSpec(layer, 'root', Sdf.SpecifierDef)
             assert prim
             assert prim.HasInfo('specifier')
@@ -63,7 +64,7 @@ class TestUsdDataFormats(unittest.TestCase):
         """
         from pxr import Usd
         for fmt in allFormats:
-            s = Usd.Stage.CreateNew('test.' + fmt)
+            s = Usd.Stage.CreateNew(f'test.{fmt}')
             p = s.DefinePrim("/X", 'Scope')
             p.SetCustomDataByKey('identifier', Sdf.AssetPath('asset.usd'))
             self.assertEqual(p.GetCustomDataByKey('identifier'),

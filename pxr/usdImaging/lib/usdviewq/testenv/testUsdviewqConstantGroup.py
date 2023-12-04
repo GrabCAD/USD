@@ -77,11 +77,7 @@ class TestConstantGroup(unittest.TestCase):
             B = 2
             C = 3
 
-        # Create a list of all constants.
-        constants = list()
-        for value in Test:
-            constants.append(value)
-
+        constants = list(Test)
         self.assertListEqual(constants, [Test.A, Test.B, Test.C])
 
         # Or more simply:

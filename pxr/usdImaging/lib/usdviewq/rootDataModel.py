@@ -63,7 +63,7 @@ class RootDataModel(QtCore.QObject):
 
         validStage = (value is None) or isinstance(value, Usd.Stage)
         if not validStage:
-            raise ValueError("Expected USD Stage, got: {}".format(repr(value)))
+            raise ValueError(f"Expected USD Stage, got: {repr(value)}")
 
         if value is not self._stage:
 
@@ -89,7 +89,7 @@ class RootDataModel(QtCore.QObject):
         """Set the current frame to a new Usd.TimeCode object."""
 
         if not isinstance(value, Usd.TimeCode):
-            raise ValueError("Expected Usd.TimeCode, got: {}".format(value))
+            raise ValueError(f"Expected Usd.TimeCode, got: {value}")
 
         self._currentFrame = value
         self._bboxCache.SetTime(self._currentFrame)
@@ -150,13 +150,10 @@ class RootDataModel(QtCore.QObject):
         """Set a new set of included purposes for bounding box calculations."""
 
         if not isinstance(value, set):
-            raise ValueError(
-                "Expected set of included purposes, got: {}".format(
-                    repr(value)))
+            raise ValueError(f"Expected set of included purposes, got: {repr(value)}")
         for purpose in value:
             if purpose not in IncludedPurposes:
-                raise ValueError("Unknown included purpose: {}".format(
-                    repr(purpose)))
+                raise ValueError(f"Unknown included purpose: {repr(purpose)}")
 
         self._bboxCache.SetIncludedPurposes(value)
 
@@ -164,8 +161,7 @@ class RootDataModel(QtCore.QObject):
         """Compute the world-space bounds of a prim."""
 
         if not isinstance(prim, Usd.Prim):
-            raise ValueError("Expected Usd.Prim object, got: {}".format(
-                repr(prim)))
+            raise ValueError(f"Expected Usd.Prim object, got: {repr(prim)}")
 
         return self._bboxCache.ComputeWorldBound(prim)
 
@@ -173,7 +169,6 @@ class RootDataModel(QtCore.QObject):
         """Compute the transformation matrix of a prim."""
 
         if not isinstance(prim, Usd.Prim):
-            raise ValueError("Expected Usd.Prim object, got: {}".format(
-                repr(prim)))
+            raise ValueError(f"Expected Usd.Prim object, got: {repr(prim)}")
 
         return self._xformCache.GetLocalToWorldTransform(prim)

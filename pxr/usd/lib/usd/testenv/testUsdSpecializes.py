@@ -25,12 +25,12 @@
 import unittest
 from pxr import Usd, Pcp, Sdf, Tf
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class TestUsdSpecializes(unittest.TestCase):
     def test_BasicApi(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt)
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}")
             specA = stage.DefinePrim("/SpecA")
             concrete = stage.OverridePrim("/Concrete")
             items = None
@@ -64,13 +64,13 @@ class TestUsdSpecializes(unittest.TestCase):
 
     def test_SpecializedPrim(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt)
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}")
             specA = stage.CreateClassPrim("/SpecA")
             stage.DefinePrim("/SpecA/Child")
 
             concrete = stage.DefinePrim("/Concrete")
 
-            assert not concrete.GetChildren() 
+            assert not concrete.GetChildren()
             assert concrete.GetSpecializes().AddSpecialize(specA.GetPath())
 
             self.assertEqual(concrete.GetChildren()[0].GetPath(),
@@ -81,8 +81,8 @@ class TestUsdSpecializes(unittest.TestCase):
 
     def test_SpecializesPathMapping(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
-            
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}", sessionLayer=None)
+
             # Create test scenegraph 
             stage.DefinePrim("/Ref")
             stage.DefinePrim("/Ref/Class")
@@ -110,13 +110,13 @@ class TestUsdSpecializes(unittest.TestCase):
             # Add a specializes path to the instance prim pointing to the 
             # class prim.
             instancePrim.GetSpecializes() \
-                        .AddSpecialize("/Model/Class", Usd.ListPositionFrontOfPrependList)
+                            .AddSpecialize("/Model/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedSpecializePaths = Sdf.PathListOp()
             expectedSpecializePaths.prependedItems = [Sdf.Path("/Ref/Class")]
 
             instancePrimSpec = \
-                stage.GetRootLayer().GetPrimAtPath("/Ref/Instance")
+                    stage.GetRootLayer().GetPrimAtPath("/Ref/Instance")
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
 
@@ -130,7 +130,7 @@ class TestUsdSpecializes(unittest.TestCase):
 
             # Add a global specialize path.
             instancePrim.GetSpecializes() \
-                        .AddSpecialize("/Class", Usd.ListPositionFrontOfPrependList)
+                            .AddSpecialize("/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedSpecializePaths = Sdf.PathListOp()
             expectedSpecializePaths.prependedItems = [Sdf.Path("/Class")]
@@ -151,7 +151,7 @@ class TestUsdSpecializes(unittest.TestCase):
             # map across the reference edit target.
             with self.assertRaises(Tf.ErrorException):
                 instancePrim.GetSpecializes() \
-                            .AddSpecialize("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
+                                .AddSpecialize("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
 
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
@@ -163,7 +163,7 @@ class TestUsdSpecializes(unittest.TestCase):
 
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
-            
+
             # Set specialize paths using the SetSpecializes API
             instancePrim.GetSpecializes().SetSpecializes(
                 ["/Model/Class", "/Class"])
@@ -183,7 +183,7 @@ class TestUsdSpecializes(unittest.TestCase):
 
     def test_SpecializesPathMappingVariants(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}", sessionLayer=None)
 
             # Create test scenegraph with variant
             refPrim = stage.DefinePrim("/Root")
@@ -204,7 +204,7 @@ class TestUsdSpecializes(unittest.TestCase):
             # Check that authored specializes path does *not* include variant
             # selection.
             instancePrimSpec = \
-                stage.GetRootLayer().GetPrimAtPath("/Root{v=x}Instance")
+                    stage.GetRootLayer().GetPrimAtPath("/Root{v=x}Instance")
             expectedSpecializes = Sdf.PathListOp()
             expectedSpecializes.prependedItems = [Sdf.Path("/Root/Class")]
             self.assertEqual(instancePrimSpec.GetInfo('specializes'),

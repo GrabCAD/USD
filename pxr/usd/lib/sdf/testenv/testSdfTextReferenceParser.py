@@ -57,7 +57,7 @@ class TestSdfTextReferenceParser(unittest.TestCase):
 
     def test_Parsing(self):
         for layerName in ('test','test_triple_delim','test_mixed_delim'):
-            layerFile = layerName + '.sdf'
+            layerFile = f'{layerName}.sdf'
             self.assertEqual(self.ParseFile(layerFile), self.ParseLayer(layerFile))
 
 if __name__ == '__main__':

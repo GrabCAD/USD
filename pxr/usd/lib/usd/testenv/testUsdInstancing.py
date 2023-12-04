@@ -41,13 +41,13 @@ def ValidateExpectedInstances(stage, expectedInstances):
         # Validate that all prims expected to be instances of the same master
         # are associated with the same master prim.
         master = stage.GetPrimAtPath(masterPath)
-        assert master, "Expected master <%s> does not exist" % masterPath
+        assert master, f"Expected master <{masterPath}> does not exist"
         for p in instancePaths:
             prim = stage.GetPrimAtPath(p)
-            assert prim.IsInstance(), "Prim <%s> is not an instance" % p
-            assert prim.GetMaster() == master, \
-                "Instance <%s> does not have expected master <%s>" % \
-                (p, master.GetPath())
+            assert prim.IsInstance(), f"Prim <{p}> is not an instance"
+            assert (
+                prim.GetMaster() == master
+            ), f"Instance <{p}> does not have expected master <{master.GetPath()}>"
 
         # Validate that the master prim's source prim index is one of
         # the instance's prim indexes.
@@ -68,10 +68,9 @@ def ValidateExpectedInstances(stage, expectedInstances):
     for root in [stage.GetPseudoRoot()] + stage.GetMasters():
         for prim in Usd.PrimRange(root):
             if prim.IsInstance():
-                assert str(prim.GetPath()) in \
-                    expectedInstances.get(str(prim.GetMaster().GetPath()), []), \
-                    "Found unexpected instance prim <%s> with master <%s>" % \
-                    (prim.GetPath(), prim.GetMaster().GetPath())
+                assert str(prim.GetPath()) in expectedInstances.get(
+                    str(prim.GetMaster().GetPath()), []
+                ), f"Found unexpected instance prim <{prim.GetPath()}> with master <{prim.GetMaster().GetPath()}>"
 
 def ValidateExpectedChanges(noticeListener, expectedResyncs = [], 
                             expectedChangedInfo = []):
@@ -79,15 +78,13 @@ def ValidateExpectedChanges(noticeListener, expectedResyncs = [],
     Validate the expected changes received by the noticeListener.
     expectedResyncs and expectedChangedInfo are lists of prim paths.
     """
-    assert set(noticeListener.resyncedPrimPaths) == \
-        set([Sdf.Path(p) for p in expectedResyncs]), \
-        "Expected resyncs for %s, got %s" % \
-        (set(expectedResyncs), noticeListener.resyncedPrimPaths)
-    
-    assert set(noticeListener.changedInfoPaths) == \
-        set([Sdf.Path(p) for p in expectedChangedInfo]), \
-        "Expected changed info for %s, got %s" % \
-        (set(expectedChangedInfo), noticeListener.changedInfoPaths)
+    assert set(noticeListener.resyncedPrimPaths) == {
+        Sdf.Path(p) for p in expectedResyncs
+    }, f"Expected resyncs for {set(expectedResyncs)}, got {noticeListener.resyncedPrimPaths}"
+
+    assert set(noticeListener.changedInfoPaths) == {
+        Sdf.Path(p) for p in expectedChangedInfo
+    }, f"Expected changed info for {set(expectedChangedInfo)}, got {noticeListener.changedInfoPaths}"
 
 def ValidateAndDumpUsdStage(stage):
     """

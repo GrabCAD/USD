@@ -26,15 +26,15 @@ import os, sys
 from pxr import Gf, Tf, Sdf, Usd
 
 def OpenLayer(name):
-    layerFile = '%s.usda' % name
+    layerFile = f'{name}.usda'
     layer = Sdf.Layer.FindOrOpen(layerFile)
-    assert layer, 'failed to open layer @%s@' % layerFile
+    assert layer, f'failed to open layer @{layerFile}@'
     return layer
 
 # Open stage.
 layer = OpenLayer('testAPI_var')
 stage = Usd.Stage.Open(layer.identifier)
-assert stage, 'failed to create stage for @%s@' % layer.identifier
+assert stage, f'failed to create stage for @{layer.identifier}@'
 
 # Check GetLayerStack behavior.
 assert stage.GetLayerStack()[0] == stage.GetSessionLayer()

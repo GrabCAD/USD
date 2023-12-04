@@ -40,8 +40,7 @@ class _ArrayAttributeModel(QtCore.QAbstractListModel):
 
         if role == QtCore.Qt.DisplayRole:
             from scalarTypes import ToString
-            return str(index.row()) + ": " + ToString(
-                dataVal, self._scalarTypeName)
+            return f"{str(index.row())}: {ToString(dataVal, self._scalarTypeName)}"
 
         elif role == QtCore.Qt.AccessibleTextRole:
             from scalarTypes import ToClipboard
@@ -101,11 +100,7 @@ class ArrayAttributeView(QtWidgets.QListView):
         vals = ", ".join([self.model().data(idx, QtCore.Qt.AccessibleTextRole)
             for idx in selectedIndexes])
 
-        if len(selectedIndexes) > 1:
-            copyText = "[ %s ]" % vals
-        else:
-            copyText = vals
-
+        copyText = f"[ {vals} ]" if len(selectedIndexes) > 1 else vals
         QtWidgets.QApplication.clipboard().setText(copyText)
 
     def SelectAll(self):

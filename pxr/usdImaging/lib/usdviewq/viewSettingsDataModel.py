@@ -248,7 +248,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def complexity(self, value):
         if value not in Complexities:
-            raise ValueError("Expected Complexity, got: '{}'.".format(value))
+            raise ValueError(f"Expected Complexity, got: '{value}'.")
         self._complexity = value
 
     @property
@@ -546,7 +546,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def clearColorText(self, value):
         if value not in ClearColors:
-            raise ValueError("Unknown clear color: '{}'".format(value))
+            raise ValueError(f"Unknown clear color: '{value}'")
         self._clearColorText = value
 
     @property
@@ -561,7 +561,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def highlightColorName(self, value):
         if value not in HighlightColors:
-            raise ValueError("Unknown highlight color: '{}'".format(value))
+            raise ValueError(f"Unknown highlight color: '{value}'")
         self._highlightColorName = value
 
     @property
@@ -576,7 +576,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def selHighlightMode(self, value):
         if value not in SelectionHighlightModes:
-            raise ValueError("Unknown highlight mode: '{}'".format(value))
+            raise ValueError(f"Unknown highlight mode: '{value}'")
         self._selHighlightMode = value
 
     @property
@@ -608,7 +608,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     def cameraPath(self, value):
         if ((not isinstance(value, Sdf.Path) or not value.IsPrimPath())
                 and value is not None):
-            raise TypeError("Expected prim path, got: {}".format(value))
+            raise TypeError(f"Expected prim path, got: {value}")
         self._cameraPath = value
 
     @property
@@ -620,12 +620,12 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
 
     @cameraPrim.setter
     def cameraPrim(self, value):
-        if value is not None:
-            if value.IsA(UsdGeom.Camera):
-                self.cameraPath = value.GetPrimPath()
-            else:
-                PrintWarning("Incorrect Prim Type",
-                    "Attempted to view the scene using the prim '%s', but "
-                    "the prim is not a UsdGeom.Camera." % (value.GetName()))
-        else:
+        if value is None:
             self.cameraPath = None
+
+        elif value.IsA(UsdGeom.Camera):
+            self.cameraPath = value.GetPrimPath()
+        else:
+            PrintWarning("Incorrect Prim Type",
+                "Attempted to view the scene using the prim '%s', but "
+                "the prim is not a UsdGeom.Camera." % (value.GetName()))

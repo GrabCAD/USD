@@ -129,7 +129,7 @@ class TestUsdRiSchemata(unittest.TestCase):
 
         print ("Test RIS Material")
         risMaterial = UsdRi.MaterialAPI(material.GetPrim())
-        assert risMaterial 
+        assert risMaterial
         assert risMaterial.GetPrim()
 
         print ("Test riStatements")
@@ -137,7 +137,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         assert riStatements
         assert riStatements.GetPrim()
         attr = riStatements.CreateRiAttribute("ModelName", "string").\
-            Set('someModelName')
+                Set('someModelName')
         assert attr
         props = riStatements.GetRiAttributes()
         assert props
@@ -147,31 +147,46 @@ class TestUsdRiSchemata(unittest.TestCase):
         prefix = ('primvars:'
             if Tf.GetEnvSetting('USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING')
             else '')
-        self.assertEqual(attr.GetName(),
-            prefix+'ri:attributes:user:ModelName')
+        self.assertEqual(attr.GetName(), f'{prefix}ri:attributes:user:ModelName')
         self.assertEqual(attr.Get(), 'someModelName')
         self.assertEqual(UsdRi.StatementsAPI.GetRiAttributeName(attr), 'ModelName')
         self.assertEqual(UsdRi.StatementsAPI.GetRiAttributeNameSpace(attr), 'user')
         assert UsdRi.StatementsAPI.IsRiAttribute(attr)
 
-        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('myattr'),
-                    prefix+'ri:attributes:user:myattr')
-        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:myattr'),
-                    prefix+'ri:attributes:dice:myattr')
-        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.myattr'),
-                    prefix+'ri:attributes:dice:myattr')
-        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_myattr'),
-                    prefix+'ri:attributes:dice:myattr')
+        self.assertEqual(
+            UsdRi.StatementsAPI.MakeRiAttributePropertyName('myattr'),
+            f'{prefix}ri:attributes:user:myattr',
+        )
+        self.assertEqual(
+            UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:myattr'),
+            f'{prefix}ri:attributes:dice:myattr',
+        )
+        self.assertEqual(
+            UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.myattr'),
+            f'{prefix}ri:attributes:dice:myattr',
+        )
+        self.assertEqual(
+            UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_myattr'),
+            f'{prefix}ri:attributes:dice:myattr',
+        )
         # period is stronger separator than underscore, when both are present
-        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my.attr'),
-                    prefix+'ri:attributes:dice_my:attr')
+        self.assertEqual(
+            UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my.attr'),
+            f'{prefix}ri:attributes:dice_my:attr',
+        )
         # multiple tokens concatted with underscores
-        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:my1:long:attr'),
-                    prefix+'ri:attributes:dice:my1_long_attr')
-        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.my2.long.attr'),
-                    prefix+'ri:attributes:dice:my2_long_attr')
-        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my3_long_attr'),
-                    prefix+'ri:attributes:dice:my3_long_attr')
+        self.assertEqual(
+            UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:my1:long:attr'),
+            f'{prefix}ri:attributes:dice:my1_long_attr',
+        )
+        self.assertEqual(
+            UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.my2.long.attr'),
+            f'{prefix}ri:attributes:dice:my2_long_attr',
+        )
+        self.assertEqual(
+            UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my3_long_attr'),
+            f'{prefix}ri:attributes:dice:my3_long_attr',
+        )
 
         self.assertEqual(riStatements.GetCoordinateSystem(), '')
         self.assertEqual(UsdRi.StatementsAPI(model).GetModelCoordinateSystems(), [])

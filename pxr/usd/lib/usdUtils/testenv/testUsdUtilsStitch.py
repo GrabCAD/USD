@@ -56,14 +56,20 @@ class TestUsdUtilsStitch(unittest.TestCase):
         for prims in [self.rootprims_a, self.rootprims_b]:
             for rootprim in prims:
                 for child in rootprim.nameChildren:
-                    self.assertTrue(self.layers[0].GetPrimAtPath(child.path),
-                        'Missing object at ' + str(child.path))
+                    self.assertTrue(
+                        self.layers[0].GetPrimAtPath(child.path),
+                        f'Missing object at {str(child.path)}',
+                    )
                 for attr in rootprim.attributes:
-                    self.assertTrue(self.layers[0].GetAttributeAtPath(attr.path),
-                        'Missing attribute at ' + str(attr.path))
+                    self.assertTrue(
+                        self.layers[0].GetAttributeAtPath(attr.path),
+                        f'Missing attribute at {str(attr.path)}',
+                    )
                 for rel in rootprim.relationships:
-                    self.assertTrue(self.layers[0].GetRelationshipAtPath(rel.path),
-                        'Missing relationship at ' + str(rel.path))
+                    self.assertTrue(
+                        self.layers[0].GetRelationshipAtPath(rel.path),
+                        f'Missing relationship at {str(rel.path)}',
+                    )
          
     def test_AllTimeSamplesMerged(self):
         timesamples_a = self.layers[1].ListAllTimeSamples()

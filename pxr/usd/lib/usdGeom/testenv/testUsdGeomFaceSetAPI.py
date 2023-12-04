@@ -102,8 +102,9 @@ class TestUsdGeomFaceSetAPI(unittest.TestCase):
         for faceSetName in validFaceSetNames:
             faceSet = UsdGeom.FaceSetAPI(sphere, faceSetName)
             (valid, reason) = faceSet.Validate()
-            self.assertTrue(valid, "FaceSet '%s' was found to be invalid: %s" % 
-                (faceSetName, reason))
+            self.assertTrue(
+                valid, f"FaceSet '{faceSetName}' was found to be invalid: {reason}"
+            )
 
     def test_ErrorCases(self):
         invalidFaceSetNames = ("badPartition", "missingIndices", 

@@ -40,8 +40,8 @@ class DuplicateCommandPlugin(Exception):
 
     def __init__(self, name):
         super(DuplicateCommandPlugin, self).__init__(
-            ("A command plugin with the name '{}' has already been "
-            "registered.").format(name))
+            f"A command plugin with the name '{name}' has already been registered."
+        )
         self.name = name
 
 
@@ -211,12 +211,11 @@ class PluginMenu(object):
 
         if menuName in self._submenus:
             return self._submenus[menuName]
-        else:
-            subQMenu = self._qMenu.addMenu(menuName)
-            subQMenu.setToolTipsVisible(True)
-            submenu = PluginMenu(subQMenu)
-            self._submenus[menuName] = submenu
-            return submenu
+        subQMenu = self._qMenu.addMenu(menuName)
+        subQMenu.setToolTipsVisible(True)
+        submenu = PluginMenu(subQMenu)
+        self._submenus[menuName] = submenu
+        return submenu
 
     def addSeparator(self):
         """Add a separator to the menu."""
@@ -284,12 +283,11 @@ class PluginUIBuilder(object):
 
         if menuName in self._menus:
             return self._menus[menuName]
-        else:
-            qMenu = self._mainWindow.menuBar().addMenu(menuName)
-            qMenu.setToolTipsVisible(True)
-            menu = PluginMenu(qMenu)
-            self._menus[menuName] = menu
-            return menu
+        qMenu = self._mainWindow.menuBar().addMenu(menuName)
+        qMenu.setToolTipsVisible(True)
+        menu = PluginMenu(qMenu)
+        self._menus[menuName] = menu
+        return menu
 
 
 def loadPlugins(usdviewApi, mainWindow):
@@ -315,17 +313,16 @@ def loadPlugins(usdviewApi, mainWindow):
             plugins[plugin], key=lambda containerType: containerType.typeName)
         for containerType in pluginContainerTypes:
             if containerType.pythonClass is None:
-                print(("WARNING: Missing plugin container '{}' from plugin "
-                    "'{}'. Make sure the container is a defined Tf.Type and "
-                    "the container's import path matches the path in "
-                    "plugInfo.json.").format(
-                        containerType.typeName, plugin.name), file=sys.stderr)
+                print(
+                    f"WARNING: Missing plugin container '{containerType.typeName}' from plugin '{plugin.name}'. Make sure the container is a defined Tf.Type and the container's import path matches the path in plugInfo.json.",
+                    file=sys.stderr,
+                )
                 continue
             container = containerType.pythonClass()
             allContainers.append(container)
 
     # No plugins to load, so don't create a registry.
-    if len(allContainers) == 0:
+    if not allContainers:
         return None
 
     # Register all plugins from each container. If there is a naming conflict,
@@ -335,7 +332,7 @@ def loadPlugins(usdviewApi, mainWindow):
         try:
             container.registerPlugins(registry, usdviewApi)
         except DuplicateCommandPlugin as e:
-            print("WARNING: {}".format(e), file=sys.stderr)
+            print(f"WARNING: {e}", file=sys.stderr)
             print("Plugins will not be loaded.", file=sys.stderr)
             return None
 

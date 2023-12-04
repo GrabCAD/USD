@@ -67,9 +67,8 @@ class TestFileUtils(unittest.TestCase):
 
     def CreateFile(self, filename, data):
         """ Create file and register for cleanup"""
-        f = open(filename,"w")
-        f.write(data)
-        f.close()   
+        with open(filename,"w") as f:
+            f.write(data)
         self.files.append(filename)
 
     def CreateSymlink(self, filename, linkname):
@@ -127,15 +126,15 @@ class TestFileUtils(unittest.TestCase):
         '''
 
         self.assertTrue(os.path.isdir(rootDir))
-        self.assertTrue(os.path.isdir("%s/sub1" % rootDir))
-        self.assertTrue(os.path.isdir("%s/sub2" % rootDir))
-        self.assertTrue(os.path.isdir("%s/sub3" % rootDir))
-        self.assertTrue(os.path.isdir("%s/sub1/sub1sub1" % rootDir))
-        self.assertTrue(os.path.isdir("%s/sub1/sub1sub2" % rootDir))
-        self.assertTrue(os.path.isdir("%s/sub2/sub2sub1" % rootDir))
-        self.assertTrue(os.path.isdir("%s/sub2/sub2sub2" % rootDir))
-        self.assertTrue(os.path.isdir("%s/sub3/sub3sub1" % rootDir))
-        self.assertTrue(os.path.isdir("%s/sub3/sub3sub2" % rootDir))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub1"))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub2"))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub3"))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub1/sub1sub1"))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub1/sub1sub2"))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub2/sub2sub1"))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub2/sub2sub2"))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub3/sub3sub1"))
+        self.assertTrue(os.path.isdir(f"{rootDir}/sub3/sub3sub2"))
 
     def VerifyDirAndFileStructure(self, rootDir):
         '''
@@ -145,21 +144,21 @@ class TestFileUtils(unittest.TestCase):
 
         self.VerifyDirStructure(rootDir)
 
-        self.assertTrue(os.path.isfile("%s/a" % rootDir))
-        self.assertTrue(os.path.isfile("%s/b" % rootDir))
-        self.assertTrue(os.path.isfile("%s/c" % rootDir))
+        self.assertTrue(os.path.isfile(f"{rootDir}/a"))
+        self.assertTrue(os.path.isfile(f"{rootDir}/b"))
+        self.assertTrue(os.path.isfile(f"{rootDir}/c"))
 
-        self.assertTrue(os.path.isfile("%s/sub1/a" % rootDir))
-        self.assertTrue(os.path.isfile("%s/sub1/b" % rootDir))
-        self.assertTrue(os.path.isfile("%s/sub1/c" % rootDir))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub1/a"))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub1/b"))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub1/c"))
 
-        self.assertTrue(os.path.isfile("%s/sub2/a" % rootDir))
-        self.assertTrue(os.path.isfile("%s/sub2/b" % rootDir))
-        self.assertTrue(os.path.isfile("%s/sub2/c" % rootDir))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub2/a"))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub2/b"))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub2/c"))
 
-        self.assertTrue(os.path.isfile("%s/sub3/a" % rootDir))
-        self.assertTrue(os.path.isfile("%s/sub3/b" % rootDir))
-        self.assertTrue(os.path.isfile("%s/sub3/c" % rootDir))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub3/a"))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub3/b"))
+        self.assertTrue(os.path.isfile(f"{rootDir}/sub3/c"))
 
     def setUp(self):
         """ Setup of test directories and symlinks"""
@@ -231,12 +230,10 @@ class TestFileUtils(unittest.TestCase):
 
     def PrintTestLinks(self):
         mtime = Lstat(self.Links[0][0])
-        self.log.info('%s %s %s' % (
-            mtime, Strftime(mtime), self.Links[0][0]))
+        self.log.info(f'{mtime} {Strftime(mtime)} {self.Links[0][0]}')
         for sp,dp in self.Links:
             mtime = Lstat(dp)
-            self.log.info('%s %s %s -> %s' % (
-                mtime, Strftime(mtime), dp, sp))
+            self.log.info(f'{mtime} {Strftime(mtime)} {dp} -> {sp}')
 
     def RemoveTestLinks(self):
         allFiles = set()

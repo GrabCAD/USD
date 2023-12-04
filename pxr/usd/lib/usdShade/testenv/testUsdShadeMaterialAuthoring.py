@@ -59,15 +59,10 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
             return retval
 
         def MakeMaterialPath(base, prop = None):
-            retval = materialsPath.AppendChild(base + "Material")
+            retval = materialsPath.AppendChild(f"{base}Material")
             if prop:
                 retval = retval.AppendProperty(prop)
             return retval
-
-        #def CreateTerminal(material, name, targetPath):
-            #terminalRel = material.GetPrim().CreateRelationship("terminal:%s" % name)
-            #terminalRel.SetTargets([targetPath,]);
-            #return terminalRel
 
         def SetupShading(stage):
             # First create the shading prims
@@ -175,8 +170,8 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
         # This is the root prim that a client would target to pull in shading
         refs = rootPrim.GetReferences()
         # XXX We need a better way of specifying self-references
-        refs.AddReference("./"+fileName, "/MaterialBindingVariants")
-        refs.AddReference("./"+fileName, "/ShadingDefs")
+        refs.AddReference(f"./{fileName}", "/MaterialBindingVariants")
+        refs.AddReference(f"./{fileName}", "/ShadingDefs")
 
         stage.GetRootLayer().Save()
 
@@ -197,7 +192,7 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
         SetupShading(stage)
         # Reference the shading directly
         refs = rootPrim.GetReferences()
-        refs.AddReference("./"+fileName, "/ShadingDefs")
+        refs.AddReference(f"./{fileName}", "/ShadingDefs")
 
         # Now pick up the newly composed material prims
         allMaterials = [ stage.GetPrimAtPath("/ModelShading/Materials/HairMaterial"),

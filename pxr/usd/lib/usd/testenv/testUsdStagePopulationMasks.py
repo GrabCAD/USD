@@ -315,7 +315,7 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         # requested index paths in pcp.
         payload = Usd.Stage.CreateInMemory()
         for n in ('One', 'Two', 'Three'):
-            payload.DefinePrim('/CubesModel/Geom/Cube' + n)
+            payload.DefinePrim(f'/CubesModel/Geom/Cube{n}')
 
         root = Usd.Stage.CreateInMemory()
         cubes = root.DefinePrim('/Cubes')

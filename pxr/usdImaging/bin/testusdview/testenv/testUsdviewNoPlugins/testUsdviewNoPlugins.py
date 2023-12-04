@@ -30,7 +30,7 @@ def _testBasic(appController):
     expectedItems = [u'&File', u'Edit Prim(s)', u'&Options', 
                      u'&View', u'Window', u'Debug']
     actualItems = [p.text() for p in menuItems]
-    failureStr = str(expectedItems) + ' != ' + str(actualItems)
+    failureStr = f'{expectedItems} != {actualItems}'
     assert actualItems == expectedItems, failureStr
 
 def testUsdviewInputFunction(appController):

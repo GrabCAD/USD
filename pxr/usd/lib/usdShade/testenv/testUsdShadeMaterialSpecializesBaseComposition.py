@@ -65,8 +65,8 @@ class TestUsdShadeMaterialSpecializesBaseComposition(unittest.TestCase):
         self.assertTrue(stage)
 
         looksScope = '/Shot/Set/SetChild/ReferencedAsset/Looks/'
-        child = self._GetMaterial(stage, looksScope + 'ChildMaterial')
-        base = self._GetMaterial(stage, looksScope + 'BaseMaterial')
+        child = self._GetMaterial(stage, f'{looksScope}ChildMaterial')
+        base = self._GetMaterial(stage, f'{looksScope}BaseMaterial')
         self.assertFalse(base.GetBaseMaterial())
         self.assertEqual(child.GetBaseMaterial().GetPath(), base.GetPath())
 
@@ -78,8 +78,8 @@ class TestUsdShadeMaterialSpecializesBaseComposition(unittest.TestCase):
         self.assertTrue(stage)
 
         basePath = '/Shot/Set/SetChild/ReferencedAsset/Looks/'
-        child = self._GetMaterial(stage, basePath + 'ChildMaterial')
-        base = self._GetMaterial(stage, basePath + 'BaseMaterial')
+        child = self._GetMaterial(stage, f'{basePath}ChildMaterial')
+        base = self._GetMaterial(stage, f'{basePath}BaseMaterial')
         self.assertFalse(base.GetBaseMaterial())
         self.assertEqual(child.GetBaseMaterial().GetPath(), base.GetPath())
 

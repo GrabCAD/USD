@@ -25,7 +25,7 @@
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class TestUsdVariants(unittest.TestCase):
     def test_VariantSetAPI(self):
@@ -52,7 +52,7 @@ class TestUsdVariants(unittest.TestCase):
 
     def test_VariantSelectionPathAbstraction(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestVariantSelectionPathAbstraction.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestVariantSelectionPathAbstraction.{fmt}')
             p = s.OverridePrim("/Foo")
             vss = p.GetVariantSets()
             self.assertFalse(p.HasVariantSets())
@@ -94,7 +94,7 @@ class TestUsdVariants(unittest.TestCase):
 
     def test_NestedVariantSets(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestNestedVariantSets.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestNestedVariantSets.{fmt}')
             p = s.DefinePrim('/Foo', 'Scope')
             vss = p.GetVariantSets()
             vs_lod = vss.AddVariantSet("LOD")

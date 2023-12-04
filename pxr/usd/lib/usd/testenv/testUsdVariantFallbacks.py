@@ -36,18 +36,17 @@ class TestUsdVariantFallback(unittest.TestCase):
                          ['green'])
 
         def OpenLayer(name):
-            fullName = '%s.usda' % name
+            fullName = f'{name}.usda'
             layerFile = os.path.abspath(fullName)
-            self.assertTrue(layerFile, 'failed to find @%s@' % fullName)
+            self.assertTrue(layerFile, f'failed to find @{fullName}@')
             layer = Sdf.Layer.FindOrOpen(layerFile)
-            self.assertTrue(layer, 'failed to open layer @%s@' % fullName)
+            self.assertTrue(layer, f'failed to open layer @{fullName}@')
             return layer
 
         # Open stage.
         layer = OpenLayer('testAPI_var')
         stage = Usd.Stage.Open(layer.identifier)
-        self.assertTrue(stage, 
-                        'failed to create stage for @%s@' % layer.identifier)
+        self.assertTrue(stage, f'failed to create stage for @{layer.identifier}@')
         sarah = stage.GetPrimAtPath('/Sarah')
         displayColor = sarah.GetVariantSet('displayColor')
         self.assertTrue(sarah, 'failed to find prim /Sarah')

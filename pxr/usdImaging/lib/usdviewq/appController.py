@@ -151,9 +151,7 @@ class UIStateProxySource(StateSource):
             attributeInspectorWidth = self.stateProperty("attributeInspectorWidth", default=UIDefaults.ATTRIBUTE_INSPECTOR_WIDTH)
             topHeight = self.stateProperty("topHeight", default=UIDefaults.TOP_HEIGHT)
             bottomHeight = self.stateProperty("bottomHeight", default=UIDefaults.BOTTOM_HEIGHT)
-            viewerMode = self.stateProperty("viewerMode", default=False)
-
-            if viewerMode:
+            if viewerMode := self.stateProperty("viewerMode", default=False):
                 self._mainWindow._ui.primStageSplitter.setSizes([0, 1])
                 self._mainWindow._ui.topBottomSplitter.setSizes([1, 0])
             else:
@@ -1050,14 +1048,14 @@ class AppController(QtCore.QObject):
     def editComplete(self, msg):
         title = self._mainWindow.windowTitle()
         if title[-1] != '*':
-            self._mainWindow.setWindowTitle(title + ' *')
+            self._mainWindow.setWindowTitle(f'{title} *')
 
         self.statusMessage(msg, 12)
         with Timer() as t:
             if self._stageView:
                 self._stageView.updateView(resetCam=False, forceComputeBBox=True)
         if self._printTiming:
-            t.PrintTime("'%s'" % msg)
+            t.PrintTime(f"'{msg}'")
 
     def _openStage(self, usdFilePath, populationMaskPaths):
         Ar.GetResolver().ConfigureResolverForAsset(usdFilePath)
@@ -1099,7 +1097,7 @@ class AppController(QtCore.QObject):
             sys.stderr.write(_GetFormattedError())
         else:
             if self._printTiming:
-                t.PrintTime('open stage "%s"' % usdFilePath)
+                t.PrintTime(f'open stage "{usdFilePath}"')
             stage.SetEditTarget(stage.GetSessionLayer())
 
         if self._mallocTags == 'stage':
@@ -1160,18 +1158,17 @@ class AppController(QtCore.QObject):
         self._UpdateTimeSamples(resetStageDataOnly)
 
     def _UpdateTimeSamples(self, resetStageDataOnly=False):
-        if self.realStartTimeCode is not None and self.realEndTimeCode is not None:
-            if self.realStartTimeCode > self.realEndTimeCode:
-                sys.stderr.write('Warning: Invalid frame range (%s, %s)\n'
-                % (self.realStartTimeCode, self.realEndTimeCode))
-                self._timeSamples = []
-            else:
-                self._timeSamples = Drange(self.realStartTimeCode,
-                                           self.realEndTimeCode,
-                                           self.step)
-        else:
+        if self.realStartTimeCode is None or self.realEndTimeCode is None:
             self._timeSamples = []
 
+        elif self.realStartTimeCode > self.realEndTimeCode:
+            sys.stderr.write('Warning: Invalid frame range (%s, %s)\n'
+            % (self.realStartTimeCode, self.realEndTimeCode))
+            self._timeSamples = []
+        else:
+            self._timeSamples = Drange(self.realStartTimeCode,
+                                       self.realEndTimeCode,
+                                       self.step)
         self._geomCounts = dict()
         self._hasTimeSamples = (len(self._timeSamples) > 0)
         self._setPlaybackAvailability() # this sets self._playbackAvailable
@@ -1212,39 +1209,40 @@ class AppController(QtCore.QObject):
             self._stageView.SetRendererPlugin(plugin)
 
     def _configureRendererPlugins(self):
-        if self._stageView:
-            self._ui.rendererPluginActionGroup = QtWidgets.QActionGroup(self)
-            self._ui.rendererPluginActionGroup.setExclusive(True)
+        if not self._stageView:
+            return
+        self._ui.rendererPluginActionGroup = QtWidgets.QActionGroup(self)
+        self._ui.rendererPluginActionGroup.setExclusive(True)
 
-            pluginTypes = self._stageView.GetRendererPlugins()
+        pluginTypes = self._stageView.GetRendererPlugins()
+        for pluginType in pluginTypes:
+            name = self._stageView.GetRendererPluginDisplayName(pluginType)
+            action = self._ui.menuRendererPlugin.addAction(name)
+            action.setCheckable(True)
+            action.pluginType = pluginType
+            self._ui.rendererPluginActionGroup.addAction(action)
+
+            action.triggered.connect(lambda pluginType=pluginType:
+                    self._rendererPluginChanged(pluginType))
+
+        # If any plugins exist, set the first one we find supported as the
+        # default
+        foundPlugin = False
+        if len(self._ui.rendererPluginActionGroup.actions()) > 0:
+            i = 0
             for pluginType in pluginTypes:
-                name = self._stageView.GetRendererPluginDisplayName(pluginType)
-                action = self._ui.menuRendererPlugin.addAction(name)
-                action.setCheckable(True)
-                action.pluginType = pluginType
-                self._ui.rendererPluginActionGroup.addAction(action)
+                if self._stageView.SetRendererPlugin(pluginType):
+                    self._ui.rendererPluginActionGroup.actions()[i].setChecked(True)
+                    foundPlugin = True
+                    break
+                i += 1
 
-                action.triggered.connect(lambda pluginType=pluginType:
-                        self._rendererPluginChanged(pluginType))
-
-            # If any plugins exist, set the first one we find supported as the
-            # default
-            foundPlugin = False
-            if len(self._ui.rendererPluginActionGroup.actions()) > 0:
-                i = 0
-                for pluginType in pluginTypes:
-                    if self._stageView.SetRendererPlugin(pluginType):
-                        self._ui.rendererPluginActionGroup.actions()[i].setChecked(True)
-                        foundPlugin = True
-                        break
-                    i += 1
-
-            # Otherwise, put a no-op placeholder in.
-            if not foundPlugin:
-                action = self._ui.menuRendererPlugin.addAction('Default')
-                action.setCheckable(True)
-                action.setChecked(True)
-                self._ui.rendererPluginActionGroup.addAction(action)
+        # Otherwise, put a no-op placeholder in.
+        if not foundPlugin:
+            action = self._ui.menuRendererPlugin.addAction('Default')
+            action.setCheckable(True)
+            action.setChecked(True)
+            self._ui.rendererPluginActionGroup.addAction(action)
 
 
     # Topology-dependent UI changes
@@ -1385,9 +1383,7 @@ class AppController(QtCore.QObject):
             t.PrintTime("update vis column")
 
     def _updatePrimView(self):
-        # Process some more prim view items.
-        n = min(100, len(self._itemsToPush))
-        if n:
+        if n := min(100, len(self._itemsToPush)):
             items = self._itemsToPush[-n:]
             del self._itemsToPush[-n:]
             for item in items:
@@ -1535,7 +1531,7 @@ class AppController(QtCore.QObject):
         # don't convert string to float directly because of rounding error
         frameString = str(field.text())
 
-        if frameString.count(".") == 0:
+        if "." not in frameString:
             frameString += ".0"
         elif frameString[-1] == ".":
             frameString += "0"
@@ -1788,14 +1784,13 @@ class AppController(QtCore.QObject):
             bottomHeight = 0
             stageViewWidth += primViewWidth
             primViewWidth = 0
+        elif self._viewerModeEscapeSizes is None:
+            bottomHeight = UIDefaults.BOTTOM_HEIGHT
+            topHeight = UIDefaults.TOP_HEIGHT
+            primViewWidth = UIDefaults.PRIM_VIEW_WIDTH
+            stageViewWidth = UIDefaults.STAGE_VIEW_WIDTH
         else:
-            if self._viewerModeEscapeSizes is not None:
-                topHeight, bottomHeight, primViewWidth, stageViewWidth = self._viewerModeEscapeSizes
-            else:
-                bottomHeight = UIDefaults.BOTTOM_HEIGHT
-                topHeight = UIDefaults.TOP_HEIGHT
-                primViewWidth = UIDefaults.PRIM_VIEW_WIDTH
-                stageViewWidth = UIDefaults.STAGE_VIEW_WIDTH
+            topHeight, bottomHeight, primViewWidth, stageViewWidth = self._viewerModeEscapeSizes
         self._ui.topBottomSplitter.setSizes([topHeight, bottomHeight])
         self._ui.primStageSplitter.setSizes([primViewWidth, stageViewWidth])
 
@@ -1986,10 +1981,7 @@ class AppController(QtCore.QObject):
 
     def GrabViewportShot(self):
         '''Returns a QImage of the current stage view in usdview.'''
-        if self._stageView:
-            return self._stageView.grabFrameBuffer()
-        else:
-            return None
+        return self._stageView.grabFrameBuffer() if self._stageView else None
 
     # File handling functionality =============================================
 
@@ -2042,12 +2034,13 @@ class AppController(QtCore.QObject):
         (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(
             self._mainWindow,
             caption,
-            './' + recommendedFilename,
+            f'./{recommendedFilename}',
             'USD Files (*.usd)'
             ';;USD ASCII Files (*.usda)'
             ';;USD Crate Files (*.usdc)'
             ';;Any USD File (*.usd *.usda *.usdc)',
-            'Any USD File (*.usd *.usda *.usdc)')
+            'Any USD File (*.usd *.usda *.usdc)',
+        )
 
         if len(saveName) == 0:
             return ''
@@ -2055,7 +2048,7 @@ class AppController(QtCore.QObject):
         _, ext = os.path.splitext(saveName)
         if ext not in ('.usd', '.usda', '.usdc'):
             saveName += '.usd'
-        
+
         return saveName
 
     def _saveOverridesAs(self):
@@ -2141,7 +2134,7 @@ class AppController(QtCore.QObject):
             self._stepSizeChanged()
             self._stepSizeChanged()
         except Exception as err:
-            self.statusMessage('Error occurred reopening Stage: %s' % err)
+            self.statusMessage(f'Error occurred reopening Stage: {err}')
             traceback.print_exc()
         finally:
             QtWidgets.QApplication.restoreOverrideCursor()
@@ -2159,7 +2152,7 @@ class AppController(QtCore.QObject):
             self._reloadFixedUI(resetStageDataOnly=True)
             self._updateForStageChanges()
         except Exception as err:
-            self.statusMessage('Error occurred rereading all layers for Stage: %s' % err)
+            self.statusMessage(f'Error occurred rereading all layers for Stage: {err}')
         finally:
             QtWidgets.QApplication.restoreOverrideCursor()
 
@@ -2276,7 +2269,7 @@ class AppController(QtCore.QObject):
 
         with self._dataModel.selection.batchComputedPropChanges:
             self._dataModel.selection.clearComputedProps()
-            for prop, targets in selectedProperties.items():
+            for prop in selectedProperties:
                 if isinstance(prop, CustomAttribute):
                     self._dataModel.selection.addComputedProp(prop)
 
@@ -2351,15 +2344,13 @@ class AppController(QtCore.QObject):
         self._ui.attributeValueEditor.refresh()
 
     def _propertyViewContextMenu(self, point):
-        item = self._ui.propertyView.itemAt(point)
-        if item:
+        if item := self._ui.propertyView.itemAt(point):
             self.contextMenu = AttributeViewContextMenu(self._mainWindow, 
                                                         item, self._dataModel)
             self.contextMenu.exec_(QtGui.QCursor.pos())
 
     def _layerStackContextMenu(self, point):
-        item = self._ui.layerStackView.itemAt(point)
-        if item:
+        if item := self._ui.layerStackView.itemAt(point):
             self.contextMenu = LayerStackContextMenu(self._mainWindow, item)
             self.contextMenu.exec_(QtGui.QCursor.pos())
 
@@ -2559,14 +2550,13 @@ class AppController(QtCore.QObject):
         path = path if isinstance(path, Sdf.Path) else Sdf.Path(str(path))
         parent = self._dataModel.stage.GetPrimAtPath(path)
         if not parent:
-            raise RuntimeError("Prim not found at path in stage: %s" % str(path))
+            raise RuntimeError(f"Prim not found at path in stage: {str(path)}")
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
         if parent not in self._primToItemMap:
             # find the first loaded parent
             childList = []
 
-            while parent != pseudoRoot \
-                        and not parent in self._primToItemMap:
+            while parent != pseudoRoot and parent not in self._primToItemMap:
                 childList.append(parent)
                 parent = parent.GetParent()
 
@@ -2611,8 +2601,7 @@ class AppController(QtCore.QObject):
         with self._dataModel.selection.batchPrimChanges:
             self._dataModel.selection.clearPrims()
             for prim in oldPrims:
-                model = GetEnclosingModelPrim(prim)
-                if model:
+                if model := GetEnclosingModelPrim(prim):
                     self._dataModel.selection.addPrim(model)
                 else:
                     self._dataModel.selection.addPrim(prim)
@@ -2711,12 +2700,13 @@ class AppController(QtCore.QObject):
             # Ensure we have an Sdf.Path, not a string.
             sdfPath = Sdf.Path(str(path))
 
-            prim = self._dataModel.stage.GetPrimAtPath(
-                sdfPath.GetAbsoluteRootOrPrimPath())
-            if not prim:
-                raise PrimNotFoundException(sdfPath)
+            if prim := self._dataModel.stage.GetPrimAtPath(
+                sdfPath.GetAbsoluteRootOrPrimPath()
+            ):
+                prims.append(prim)
 
-            prims.append(prim)
+            else:
+                raise PrimNotFoundException(sdfPath)
 
         return prims
 
@@ -2767,7 +2757,7 @@ class AppController(QtCore.QObject):
         selectedItems = [
             self._getItemAtPath(prim.GetPath(), ensureExpanded=True)
             for prim in self._dataModel.selection.getPrims()]
-        if len(selectedItems) > 0:
+        if selectedItems:
             self._ui.primView.setCurrentItem(selectedItems[0])
         for item in selectedItems:
             item.setSelected(True)
@@ -2998,12 +2988,12 @@ class AppController(QtCore.QObject):
             treeWidget.clear()
         self._populateAttributeInspector()
 
-        currRow = 0
-        for key, attribute in self._attributeDict.iteritems():
+        for currRow, (key, attribute) in enumerate(self._attributeDict.iteritems()):
             targets = None
 
-            if (isinstance(attribute, BoundingBoxAttribute) or
-                isinstance(attribute, LocalToWorldXformAttribute)):
+            if isinstance(
+                attribute, (BoundingBoxAttribute, LocalToWorldXformAttribute)
+            ):
                 typeContent = PropertyViewIcons.COMPOSED()
                 typeRole = PropertyViewDataRoles.COMPOSED
             elif type(attribute) == Usd.Attribute:
@@ -3035,8 +3025,7 @@ class AppController(QtCore.QObject):
 
             currItem = treeWidget.topLevelItem(currRow)
 
-            valTextFont = GetAttributeTextFont(attribute, frame)
-            if valTextFont:
+            if valTextFont := GetAttributeTextFont(attribute, frame):
                 currItem.setFont(PropertyViewIndex.VALUE, valTextFont)
                 currItem.setFont(PropertyViewIndex.NAME, valTextFont)
             else:
@@ -3047,8 +3036,7 @@ class AppController(QtCore.QObject):
             currItem.setForeground(PropertyViewIndex.VALUE, fgColor)
 
             if targets:
-                childRow = 0
-                for t in targets:
+                for childRow, t in enumerate(targets):
                     valTextFont = GetAttributeTextFont(attribute, frame) or UIFonts.BOLD
                     # USD does not provide or infer values for relationship or
                     # connection targets, so we don't display them here.
@@ -3066,10 +3054,6 @@ class AppController(QtCore.QObject):
                         child.setData(PropertyViewIndex.TYPE,
                                       QtCore.Qt.ItemDataRole.WhatsThisRole,
                                       PropertyViewDataRoles.CONNECTION)
-
-                    childRow += 1
-
-            currRow += 1
 
         self._updateAttributeViewSelection()
 
@@ -3102,23 +3086,17 @@ class AppController(QtCore.QObject):
         if selectedAttribute:
             attrName = str(selectedAttribute.text(PropertyViewIndex.NAME))
 
-            if PropTreeWidgetTypeIsRel(selectedAttribute):
-                obj = self._dataModel.selection.getFocusPrim().GetRelationship(
-                    attrName)
-            else:
-                obj = self._dataModel.selection.getFocusPrim().GetAttribute(
-                    attrName)
-
-            return obj
-
+            return (
+                self._dataModel.selection.getFocusPrim().GetRelationship(attrName)
+                if PropTreeWidgetTypeIsRel(selectedAttribute)
+                else self._dataModel.selection.getFocusPrim().GetAttribute(
+                    attrName
+                )
+            )
         return self._dataModel.selection.getFocusPrim()
 
     def _findIndentPos(self, s):
-        for index, char in enumerate(s):
-            if char != ' ':
-                return index
-
-        return len(s) - 1
+        return next((index for index, char in enumerate(s) if char != ' '), len(s) - 1)
 
     def _maxToolTipWidth(self):
         return 90
@@ -3136,12 +3114,11 @@ class AppController(QtCore.QObject):
             # which displays the last 5 chars with an ellipsis
             # in between. For other values, we simply display a
             # trailing ellipsis to indicate more data.
-            if s[0] == '\'' and s[-1] == '\'':
-                return (s[:self._maxToolTipWidth() - offset]
-                        + '...'
-                        + s[len(s) - offset:])
-            else:
-                return s[:self._maxToolTipWidth()] + '...'
+            return (
+                f'{s[:self._maxToolTipWidth() - offset]}...{s[len(s) - offset:]}'
+                if s[0] == '\'' and s[-1] == '\''
+                else f'{s[:self._maxToolTipWidth()]}...'
+            )
         return s
 
     def _limitToolTipSize(self, s, isList=False):
@@ -3158,7 +3135,7 @@ class AppController(QtCore.QObject):
         if (len(lines) > self._maxToolTipHeight()):
             ellipsis = ' '*self._findIndentPos(line) + '...'
             if isList:
-                ellipsis = '<li>' + ellipsis + '</li>'
+                ellipsis = f'<li>{ellipsis}</li>'
             else:
                 ellipsis += '<br>'
 
@@ -3201,7 +3178,7 @@ class AppController(QtCore.QObject):
             for index, value in enumerate(val):
                 last = len(val) - 1
                 trimmed = self._cleanStr(value, ' ')
-                ttStr += ("<li>" + str(index) + ":  " + trimmed + "</li><br>")
+                ttStr += f"<li>{str(index)}:  {trimmed}</li><br>"
 
         elif isinstance(val, dict):
             # We stringify all dict elements so they display more nicely.
@@ -3272,13 +3249,13 @@ class AppController(QtCore.QObject):
 
         for k in compKeys:
             v = obj.GetMetadata(k)
-            if not v is None:
+            if v is not None:
                 m[k] = v
 
         m["[object type]"] = "Attribute" if type(obj) is Usd.Attribute \
-                       else "Prim" if type(obj) is Usd.Prim \
-                       else "Relationship" if type(obj) is Usd.Relationship \
-                       else "Unknown"
+                           else "Prim" if type(obj) is Usd.Prim \
+                           else "Relationship" if type(obj) is Usd.Relationship \
+                           else "Unknown"
         m["[path]"] = str(obj.GetPath())
 
         variantSets = {}
@@ -3305,11 +3282,7 @@ class AppController(QtCore.QObject):
             tableWidget.setItem(i, 0, attrName)
 
             # Get metadata value
-            if key == "customData":
-                val = obj.GetCustomData()
-            else:
-                val = m[key]
-
+            val = obj.GetCustomData() if key == "customData" else m[key]
             valStr, ttStr = self._formatMetadataValueView(val)
             attrVal = QtWidgets.QTableWidgetItem(valStr)
             attrVal.setToolTip(ttStr)
@@ -3318,7 +3291,7 @@ class AppController(QtCore.QObject):
 
         rowIndex = len(m)
         for variantSetName, combo in variantSets.iteritems():
-            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
+            attrName = QtWidgets.QTableWidgetItem(str(f'{variantSetName} variant'))
             tableWidget.setItem(rowIndex, 0, attrName)
             tableWidget.setCellWidget(rowIndex, 1, combo)
             combo.currentIndexChanged.connect(
@@ -3428,8 +3401,7 @@ class AppController(QtCore.QObject):
                 layerItem = QtWidgets.QTableWidgetItem(layer.GetHierarchicalDisplayString())
                 layerItem.layerPath = layer.layer.realPath
                 layerItem.identifier = layer.layer.identifier
-                toolTip = "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
-                    (layer.layer.identifier, layerItem.layerPath)
+                toolTip = f"<b>identifier:</b> @{layer.layer.identifier}@ <br> <b>resolved path:</b> {layerItem.layerPath}"
                 toolTip = self._limitToolTipSize(toolTip)
                 layerItem.setToolTip(toolTip)
                 tableWidget.setItem(i, 0, layerItem)
@@ -3484,17 +3456,16 @@ class AppController(QtCore.QObject):
                     valueItemColor = (UIPropertyValueSourceColors.TIME_SAMPLE if
                         sampleBased else UIPropertyValueSourceColors.DEFAULT)
                     valueItem.setForeground(valueItemColor)
-                    valueItem.setToolTip(ttStr)
-
                 else:
                     metadataKeys = spec.GetMetaDataInfoKeys()
-                    metadataDict = {}
-                    for mykey in metadataKeys:
-                        if spec.HasInfo(mykey):
-                            metadataDict[mykey] = spec.GetInfo(mykey)
+                    metadataDict = {
+                        mykey: spec.GetInfo(mykey)
+                        for mykey in metadataKeys
+                        if spec.HasInfo(mykey)
+                    }
                     valStr, ttStr = self._formatMetadataValueView(metadataDict)
                     valueItem = QtWidgets.QTableWidgetItem(valStr)
-                    valueItem.setToolTip(ttStr)
+                valueItem.setToolTip(ttStr)
 
                 tableWidget.setItem(i, 2, valueItem)
                 # Add the data the context menu needs
@@ -3627,12 +3598,11 @@ class AppController(QtCore.QObject):
             self._stageView.HUDStatKeys = self._getHUDStatKeys()
 
     def _clearGeomCountsForPrimPath(self, primPath):
-        entriesToRemove = []
-        # Clear all entries whose prim is either an ancestor or a descendant
-        # of the given prim path.
-        for (p, frame) in self._geomCounts:
-            if (primPath.HasPrefix(p.GetPath()) or p.GetPath().HasPrefix(primPath)):
-                entriesToRemove.append((p, frame))
+        entriesToRemove = [
+            (p, frame)
+            for p, frame in self._geomCounts
+            if (primPath.HasPrefix(p.GetPath()) or p.GetPath().HasPrefix(primPath))
+        ]
         for entry in entriesToRemove:
             del self._geomCounts[entry]
 
@@ -3645,10 +3615,7 @@ class AppController(QtCore.QObject):
 
     def _accountForFlattening(self,shape):
         """Helper function for computing geomCounts"""
-        if len(shape) == 1:
-            return shape[0] / 3
-        else:
-            return shape[0]
+        return shape[0] / 3 if len(shape) == 1 else shape[0]
 
     def _calculateGeomCounts(self, prim, frame):
         """Computes the number of CVs, Verts, and Faces for each prim and each
@@ -3833,8 +3800,9 @@ class AppController(QtCore.QObject):
                 if item.prim.IsPseudoRoot():
                     print("WARNING: Cannot change activation of pseudoroot.")
                 elif item.isInMaster:
-                    print("WARNING: The prim <" + str(item.prim.GetPrimPath()) +
-                        "> is in a master. Cannot change activation.")
+                    print(
+                        f"WARNING: The prim <{str(item.prim.GetPrimPath())}> is in a master. Cannot change activation."
+                    )
                 else:
                     paths.append(item.prim.GetPrimPath())
 
@@ -3857,9 +3825,9 @@ class AppController(QtCore.QObject):
 
             pathNames = ", ".join(path.name for path in paths)
             if active:
-                self.editComplete("Deactivated {}.".format(pathNames))
+                self.editComplete(f"Deactivated {pathNames}.")
             else:
-                self.editComplete("Activated {}.".format(pathNames))
+                self.editComplete(f"Activated {pathNames}.")
 
     def activateSelectedPrims(self):
         self._setSelectedPrimsActivation(True)
@@ -3873,7 +3841,7 @@ class AppController(QtCore.QObject):
             for item in self.getSelectedItems():
                 item.setLoaded(True)
                 primNames.append(item.name)
-            self.editComplete("Loaded %s." % primNames)
+            self.editComplete(f"Loaded {primNames}.")
 
     def unloadSelectedPrims(self):
         with BusyContext():
@@ -3881,7 +3849,7 @@ class AppController(QtCore.QObject):
             for item in self.getSelectedItems():
                 item.setLoaded(False)
                 primNames.append(item.name)
-            self.editComplete("Unloaded %s." % primNames)
+            self.editComplete(f"Unloaded {primNames}.")
 
     def onStageViewMouseDrag(self):
         return
@@ -3890,79 +3858,77 @@ class AppController(QtCore.QObject):
 
         # Ignoring middle button until we have something
         # meaningfully different for it to do
-        if button in [QtCore.Qt.LeftButton, QtCore.Qt.RightButton]:
-            # Expected context-menu behavior is that even with no
-            # modifiers, if we are activating on something already selected,
-            # do not change the selection
-            doContext = (button == QtCore.Qt.RightButton and path
-                         and path != Sdf.Path.emptyPath)
-            doSelection = True
-            if doContext:
-                for selPrim in self._dataModel.selection.getPrims():
-                    selPath = selPrim.GetPath()
-                    if (selPath != Sdf.Path.absoluteRootPath and
-                        path.HasPrefix(selPath)):
-                        doSelection = False
-                        break
-            if doSelection:
-                self._dataModel.selection.setPoint(point)
+        if button not in [QtCore.Qt.LeftButton, QtCore.Qt.RightButton]:
+            return
+        # Expected context-menu behavior is that even with no
+        # modifiers, if we are activating on something already selected,
+        # do not change the selection
+        doContext = (button == QtCore.Qt.RightButton and path
+                     and path != Sdf.Path.emptyPath)
+        doSelection = True
+        if doContext:
+            for selPrim in self._dataModel.selection.getPrims():
+                selPath = selPrim.GetPath()
+                if (selPath != Sdf.Path.absoluteRootPath and
+                    path.HasPrefix(selPath)):
+                    doSelection = False
+                    break
+        if doSelection:
+            self._dataModel.selection.setPoint(point)
 
-                shiftPressed = modifiers & QtCore.Qt.ShiftModifier
-                ctrlPressed = modifiers & QtCore.Qt.ControlModifier
+            shiftPressed = modifiers & QtCore.Qt.ShiftModifier
+            ctrlPressed = modifiers & QtCore.Qt.ControlModifier
 
-                if path != Sdf.Path.emptyPath:
-                    prim = self._dataModel.stage.GetPrimAtPath(path)
+            if path != Sdf.Path.emptyPath:
+                prim = self._dataModel.stage.GetPrimAtPath(path)
 
-                    if self._dataModel.viewSettings.pickMode == PickModes.MODELS:
-                        if prim.IsModel():
-                            model = prim
-                        else:
-                            model = GetEnclosingModelPrim(prim)
-                        if model:
-                            prim = model
+                if self._dataModel.viewSettings.pickMode == PickModes.MODELS:
+                    model = prim if prim.IsModel() else GetEnclosingModelPrim(prim)
+                    if model:
+                        prim = model
 
-                    if self._dataModel.viewSettings.pickMode != PickModes.INSTANCES:
-                        instanceIndex = ALL_INSTANCES
+                if self._dataModel.viewSettings.pickMode != PickModes.INSTANCES:
+                    instanceIndex = ALL_INSTANCES
 
-                    instance = instanceIndex
-                    if instanceIndex != ALL_INSTANCES:
-                        instanceId = GetInstanceIdForIndex(prim, instanceIndex,
-                            self._dataModel.currentFrame)
-                        if instanceId is not None:
-                            instance = instanceId
+                instance = instanceIndex
+                if instanceIndex != ALL_INSTANCES:
+                    instanceId = GetInstanceIdForIndex(prim, instanceIndex,
+                        self._dataModel.currentFrame)
+                    if instanceId is not None:
+                        instance = instanceId
 
-                    if shiftPressed:
-                        # Clicking prim while holding shift adds it to the
-                        # selection.
-                        self._dataModel.selection.addPrim(prim, instance)
-                    elif ctrlPressed:
-                        # Clicking prim while holding ctrl toggles it in the
-                        # selection.
-                        self._dataModel.selection.togglePrim(prim, instance)
-                    else:
-                        # Clicking prim with no modifiers sets it as the
-                        # selection.
-                        self._dataModel.selection.switchToPrimPath(
-                            prim.GetPath(), instance)
-
-                elif not shiftPressed and not ctrlPressed:
-                    # Clicking the background with no modifiers clears the
+                if shiftPressed:
+                    # Clicking prim while holding shift adds it to the
                     # selection.
-                    self._dataModel.selection.clear()
+                    self._dataModel.selection.addPrim(prim, instance)
+                elif ctrlPressed:
+                    # Clicking prim while holding ctrl toggles it in the
+                    # selection.
+                    self._dataModel.selection.togglePrim(prim, instance)
+                else:
+                    # Clicking prim with no modifiers sets it as the
+                    # selection.
+                    self._dataModel.selection.switchToPrimPath(
+                        prim.GetPath(), instance)
 
-            if doContext:
-                item = self._getItemAtPath(path)
-                self._showPrimContextMenu(item)
+            elif not shiftPressed and not ctrlPressed:
+                # Clicking the background with no modifiers clears the
+                # selection.
+                self._dataModel.selection.clear()
 
-                # context menu steals mouse release event from the StageView.
-                # We need to give it one so it can track its interaction
-                # mode properly
-                mrEvent = QtGui.QMouseEvent(QtCore.QEvent.MouseButtonRelease,
-                                            QtGui.QCursor.pos(),
-                                            QtCore.Qt.RightButton,
-                                            QtCore.Qt.MouseButtons(QtCore.Qt.RightButton),
-                                            QtCore.Qt.KeyboardModifiers())
-                QtWidgets.QApplication.sendEvent(self._stageView, mrEvent)
+        if doContext:
+            item = self._getItemAtPath(path)
+            self._showPrimContextMenu(item)
+
+            # context menu steals mouse release event from the StageView.
+            # We need to give it one so it can track its interaction
+            # mode properly
+            mrEvent = QtGui.QMouseEvent(QtCore.QEvent.MouseButtonRelease,
+                                        QtGui.QCursor.pos(),
+                                        QtCore.Qt.RightButton,
+                                        QtCore.Qt.MouseButtons(QtCore.Qt.RightButton),
+                                        QtCore.Qt.KeyboardModifiers())
+            QtWidgets.QApplication.sendEvent(self._stageView, mrEvent)
 
     def onRollover(self, path, instanceIndex, modifiers):
         prim = self._dataModel.stage.GetPrimAtPath(path)

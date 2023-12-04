@@ -25,7 +25,7 @@
 import os, sys, tempfile, unittest
 from pxr import Gf, Tf, Sdf, Usd
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class PayloadedScene(object):
     def __init__(self, fmt, unload=True, loadSet=Usd.Stage.LoadAll,
@@ -41,26 +41,26 @@ class PayloadedScene(object):
         #   /Foo/Baz ---(P)---> /Baz                   payload3.fmt
         #                       /Baz/Garply ---(P)---> /Garply
         #                                              /Garply/Qux
-        
-        ext = '.'+fmt
+
+        ext = f'.{fmt}'
 
         # Create payload1.fmt
-        self.__payload1 = stageCreateFn("payload1"+ext)
+        self.__payload1 = stageCreateFn(f"payload1{ext}")
         p = self.__payload1.DefinePrim("/Sad/Panda", "Scope")
 
         # Create payload3.usda
-        self.__payload3 = stageCreateFn("payload3"+ext)
+        self.__payload3 = stageCreateFn(f"payload3{ext}")
         p = self.__payload3.DefinePrim("/Garply/Qux", "Scope")
 
         # Create payload2.usda
-        self.__payload2 = stageCreateFn("payload2"+ext)
+        self.__payload2 = stageCreateFn(f"payload2{ext}")
         p = self.__payload2.DefinePrim("/Baz/Garply", "Scope")
         p.SetPayload(self.__payload3.GetRootLayer(), "/Garply")
 
         #
         # Create the scene that references payload1 and payload2
         #
-        self.stage = stageCreateFn("scene"+ext, loadSet)
+        self.stage = stageCreateFn(f"scene{ext}", loadSet)
         p = self.stage.DefinePrim("/Sad", "Scope")
         p.SetPayload(self.__payload1.GetRootLayer(), "/Sad")
 
@@ -74,18 +74,18 @@ class PayloadedScene(object):
 
     def CleanupOnDiskAssets(self, fmt):
         import os
-        
+
         del self.stage
         del self.__payload1
         del self.__payload2
         del self.__payload3
 
-        ext = "." + fmt
+        ext = f".{fmt}"
         for i in [1,2,3]:
-            fname = "payload" + str(i) + ext
+            fname = f"payload{str(i)}{ext}"
             if os.path.exists(fname):
                 os.unlink(fname)
-        fname = "scene"+ ext
+        fname = f"scene{ext}"
         if os.path.exists(fname):
             os.unlink(fname)
 
@@ -461,7 +461,7 @@ class TestUsdLoadUnload(unittest.TestCase):
         """Tests the behavior of Usd.Stage.Create
         """
         for fmt in allFormats:
-            layerName = "testLayer." + fmt
+            layerName = f"testLayer.{fmt}"
             if os.path.exists(layerName):
                 os.unlink(layerName)
 
@@ -509,7 +509,7 @@ class TestUsdLoadUnload(unittest.TestCase):
         # Try with a real file -- saved changes preserved, unsaved changes get
         # discarded.
         def _TestStageReload(fmt):
-            with tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as f:
+            with tempfile.NamedTemporaryFile(suffix=f'.{fmt}') as f:
                 f.close()
 
                 s = Usd.Stage.CreateNew(f.name)
@@ -543,8 +543,7 @@ class TestUsdLoadUnload(unittest.TestCase):
         def _TestLayerReload(fmt):
             # First, test case where the reloaded layer is in the
             # stage's root LayerStack.
-            with tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as l1name, \
-                 tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as l2name:
+            with (tempfile.NamedTemporaryFile(suffix=f'.{fmt}') as l1name, tempfile.NamedTemporaryFile(suffix=f'.{fmt}') as l2name):
                 l1name.close()
                 l2name.close()
 
@@ -567,7 +566,7 @@ class TestUsdLoadUnload(unittest.TestCase):
 
                 assert not s.GetPrimAtPath('/foo')
                 assert s.GetPrimAtPath('/bar')
-                
+
                 # NOTE: l1name will want to delete the underlying file
                 #       on __exit__ from the context manager.  But stage s
                 #       may have the file open.  If so the deletion will
@@ -577,8 +576,7 @@ class TestUsdLoadUnload(unittest.TestCase):
 
             # Now test the case where the reloaded layer is in a referenced
             # LayerStack.
-            with tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as rootLayerName, \
-                 tempfile.NamedTemporaryFile(suffix='.%s' % fmt) as refLayerName:
+            with (tempfile.NamedTemporaryFile(suffix=f'.{fmt}') as rootLayerName, tempfile.NamedTemporaryFile(suffix=f'.{fmt}') as refLayerName):
                 rootLayerName.close()
                 refLayerName.close()
 
@@ -595,7 +593,7 @@ class TestUsdLoadUnload(unittest.TestCase):
 
                 s = Usd.Stage.Open(rootLayerName.name)
                 assert s.GetPrimAtPath('/foo/bar')
-                
+
                 del refLayer.GetPrimAtPath('/foo').nameChildren['bar']
                 refLayer.Export(refLayerName.name)
                 Sdf.Layer.Find(refLayerName.name).Reload(force = True)
@@ -615,7 +613,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             #      not the behavior we ultimately want -- see bug 102444.
             # Can't test Reload() for usdc on Windows because the system
             # won't allow us to modify the memory-mapped file.
-            if not (platform.system() == 'Windows' and fmt == 'usdc'):
+            if platform.system() != 'Windows' or fmt != 'usdc':
                 _TestLayerReload(fmt)
 
 if __name__ == "__main__":

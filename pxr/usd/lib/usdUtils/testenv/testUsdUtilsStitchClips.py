@@ -67,21 +67,25 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
             self.endTimeCode   = 108
             rootLayer = Sdf.Layer.FindOrOpen(self.baseName)
             self.rootLayer = rootLayer if rootLayer else Sdf.Layer.CreateNew(self.baseName)
-            UsdUtils.StitchClips(self.rootLayer, self.layerFileNames[0:7], 
-                                 self.clipPath, self.startTimeCode, self.endTimeCode)
+            UsdUtils.StitchClips(
+                self.rootLayer,
+                self.layerFileNames[:7],
+                self.clipPath,
+                self.startTimeCode,
+                self.endTimeCode,
+            )
 
         self.setupComplete = True
 
     def test_ValidClipMetadata(self):
         clipPrim = self.rootLayer.GetPrimAtPath(self.clipPath)
         self.assertTrue(clipPrim)
-        self.assertEqual(set(clipPrim.ListInfoKeys()), 
-                         set(['clips', 'specifier']))
-        self.assertEqual(set(clipPrim.GetInfo('clips').keys()),
-                         set(['default']))
-        self.assertEqual(set(clipPrim.GetInfo('clips')['default'].keys()),
-                         set(['times', 'assetPaths', 'primPath', 
-                              'manifestAssetPath', 'active']))
+        self.assertEqual(set(clipPrim.ListInfoKeys()), {'clips', 'specifier'})
+        self.assertEqual(set(clipPrim.GetInfo('clips').keys()), {'default'})
+        self.assertEqual(
+            set(clipPrim.GetInfo('clips')['default'].keys()),
+            {'times', 'assetPaths', 'primPath', 'manifestAssetPath', 'active'},
+        )
 
     def test_ValidUsdLayerGeneration(self):
         self.assertTrue(self.rootLayer)
@@ -104,7 +108,7 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
 
         # ensure all paths are relative
         import itertools
-        self.assertTrue(not any([os.path.isabs(i.path) for i in assetPaths]))
+        self.assertTrue(not any(os.path.isabs(i.path) for i in assetPaths))
 
     # This test ensures that we are grabbing our frame data from
     # the layers directly so we incur no precision loss from string

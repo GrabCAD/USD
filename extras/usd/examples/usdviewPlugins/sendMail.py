@@ -62,11 +62,7 @@ def SendMail(usdviewApi):
             return False
 
         # set the image based on user config
-        if mailInfo.imagetype == "Window":
-            imagedata = windowShot
-        else:
-            imagedata = viewportShot
-
+        imagedata = windowShot if mailInfo.imagetype == "Window" else viewportShot
         # verify we created an image correctly and could safely save it
         if not imagedata or not imagedata.save(tempimagefile.name):
             return False
@@ -236,18 +232,64 @@ def _GenerateDefaultInfo(usdviewApi, dialog):
     camera = usdviewApi.currentGfCamera
     sendee = ""
     subject = 'Usdview Screenshot'
-    body = str("Usdview screenshot, taken " + currtime + "\n" +
-               "----------------------------------------" + "\n" +
-               "File: "
-                  + str(usdviewApi.stageIdentifier) + "\n" +
-               "Selected Prim Paths: "
-                  + ", ".join(map(str, usdviewApi.selectedPrims)) + "\n" +
-               "Current Frame: "
-                  + str(usdviewApi.frame) + "\n" +
-               "Complexity: "
-                  + str(usdviewApi.dataModel.viewSettings.complexity) + "\n" +
-               "Camera Info:\n" +str(camera) + "\n" +
-               "----------------------------------------" + "\n")
+    body = str(
+        (
+            (
+                (
+                    (
+                        (
+                            (
+                                (
+                                    (
+                                        (
+                                            (
+                                                (
+                                                    (
+                                                        (
+                                                            (
+                                                                f"Usdview screenshot, taken {currtime}"
+                                                                + "\n"
+                                                                + "----------------------------------------"
+                                                            )
+                                                            + "\n"
+                                                        )
+                                                        + "File: "
+                                                    )
+                                                    + str(
+                                                        usdviewApi.stageIdentifier
+                                                    )
+                                                    + "\n"
+                                                )
+                                                + "Selected Prim Paths: "
+                                            )
+                                            + ", ".join(
+                                                map(
+                                                    str,
+                                                    usdviewApi.selectedPrims,
+                                                )
+                                            )
+                                            + "\n"
+                                        )
+                                        + "Current Frame: "
+                                    )
+                                    + str(usdviewApi.frame)
+                                    + "\n"
+                                )
+                                + "Complexity: "
+                            )
+                            + str(usdviewApi.dataModel.viewSettings.complexity)
+                            + "\n"
+                        )
+                        + "Camera Info:\n"
+                    )
+                    + str(camera)
+                    + "\n"
+                )
+                + "----------------------------------------"
+            )
+            + "\n"
+        )
+    )
 
     return EmailInfo(sender, sendee, subject, body)
 

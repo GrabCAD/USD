@@ -49,13 +49,11 @@ class Decorator(Pcp.PayloadDecorator):
     def _DecoratePayload(self, primIndexPath, payload, context):
         return self._GetArgs(context)
     def _IsFieldRelevantForDecoration(self, field):
-        return (field == "documentation" or
-                field == "kind")
+        return field in ["documentation", "kind"]
     def _IsFieldChangeRelevantForDecoration(self, primIndexPath, 
                                             siteLayer, sitePath, 
                                             field, oldVal, newVal):
-        assert (field == "documentation" or
-                field == "kind")
+        assert field in ["documentation", "kind"]
         return True
 
 class TestPcpPayloadDecorator(unittest.TestCase):
@@ -82,34 +80,33 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         payloadLayerFile = 'basic/payload.sdf'
         payloadLayerId = Sdf.Layer.CreateIdentifier(
             payloadLayerFile, {'doc':'instance','kind':'ref'})
-        assert Sdf.Layer.Find(payloadLayerId), \
-            "Failed to find expected payload layer '%s'" % payloadLayerId
+        assert Sdf.Layer.Find(
+            payloadLayerId
+        ), f"Failed to find expected payload layer '{payloadLayerId}'"
 
         # Test that authoring a new value for the relevant fields
         # causes the prim to be significantly changed.
         with Pcp._TestChangeProcessor(cache) as cp:
             rootLayer.GetPrimAtPath('/Instance') \
-                .SetInfo('documentation', 'updated_instance')
-            assert cp.GetSignificantChanges() == ['/Instance'], \
-                "Got significant changes %s" % cp.GetSignificantChanges()
-            assert cp.GetSpecChanges() == [], \
-                "Got spec changes %s" % cp.GetSpecChanges()
-            assert cp.GetPrimChanges() == [], \
-                "Got prim changes %s" % cp.GetPrimChanges()
-            
+                    .SetInfo('documentation', 'updated_instance')
+            assert cp.GetSignificantChanges() == [
+                '/Instance'
+            ], f"Got significant changes {cp.GetSignificantChanges()}"
+            assert cp.GetSpecChanges() == [], f"Got spec changes {cp.GetSpecChanges()}"
+            assert cp.GetPrimChanges() == [], f"Got prim changes {cp.GetPrimChanges()}"
+
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
         assert Sdf.Layer.Find(payloadLayerId)
 
         with Pcp._TestChangeProcessor(cache) as cp:
             rootLayer.GetPrimAtPath('/Instance') \
-                .SetInfo('kind', 'updated_instance')
-            assert cp.GetSignificantChanges() == ['/Instance'], \
-                "Got significant changes %s" % cp.GetSignificantChanges()
-            assert cp.GetSpecChanges() == [], \
-                "Got spec changes %s" % cp.GetSpecChanges()
-            assert cp.GetPrimChanges() == [], \
-                "Got prim changes %s" % cp.GetPrimChanges()
+                    .SetInfo('kind', 'updated_instance')
+            assert cp.GetSignificantChanges() == [
+                '/Instance'
+            ], f"Got significant changes {cp.GetSignificantChanges()}"
+            assert cp.GetSpecChanges() == [], f"Got spec changes {cp.GetSpecChanges()}"
+            assert cp.GetPrimChanges() == [], f"Got prim changes {cp.GetPrimChanges()}"
 
         (pi, err) = cache.ComputePrimIndex('/Instance')
 
@@ -121,13 +118,12 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         # does not cause any changes.
         with Pcp._TestChangeProcessor(cache) as cp:
             rootLayer.GetPrimAtPath('/Instance') \
-                .SetInfo('comment', 'fooooo')
-            assert cp.GetSignificantChanges() == [], \
-                "Got significant changes %s" % cp.GetSignificantChanges()
-            assert cp.GetSpecChanges() == [], \
-                "Got spec changes %s" % cp.GetSpecChanges()
-            assert cp.GetPrimChanges() == [], \
-                "Got prim changes %s" % cp.GetPrimChanges()
+                    .SetInfo('comment', 'fooooo')
+            assert (
+                cp.GetSignificantChanges() == []
+            ), f"Got significant changes {cp.GetSignificantChanges()}"
+            assert cp.GetSpecChanges() == [], f"Got spec changes {cp.GetSpecChanges()}"
+            assert cp.GetPrimChanges() == [], f"Got prim changes {cp.GetPrimChanges()}"
 
     def TestSiblingStrength():
         '''Test that Pcp.PayloadDecorator is invoked and that the
@@ -206,23 +202,21 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         # significant change.
         with Pcp._TestChangeProcessor(cache) as cp:
             rootLayer.GetPrimAtPath('/Instance').SetInfo('documentation', 'foo')
-            assert cp.GetSignificantChanges() == ['/Instance'], \
-                "Got significant changes %s" % cp.GetSignificantChanges()
-            assert cp.GetSpecChanges() == [], \
-                "Got spec changes %s" % cp.GetSpecChanges()
-            assert cp.GetPrimChanges() == [], \
-                "Got prim changes %s" % cp.GetPrimChanges()
+            assert cp.GetSignificantChanges() == [
+                '/Instance'
+            ], f"Got significant changes {cp.GetSignificantChanges()}"
+            assert cp.GetSpecChanges() == [], f"Got spec changes {cp.GetSpecChanges()}"
+            assert cp.GetPrimChanges() == [], f"Got prim changes {cp.GetPrimChanges()}"
 
         # Other changes aren't relevant, so no changes should be
         # reported.
         with Pcp._TestChangeProcessor(cache) as cp:
             rootLayer.GetPrimAtPath('/Instance').SetInfo('documentation', 'bar')
-            assert cp.GetSignificantChanges() == [], \
-                "Got significant changes %s" % cp.GetSignificantChanges()
-            assert cp.GetSpecChanges() == [], \
-                "Got spec changes %s" % cp.GetSpecChanges()
-            assert cp.GetPrimChanges() == [], \
-                "Got prim changes %s" % cp.GetPrimChanges()
+            assert (
+                cp.GetSignificantChanges() == []
+            ), f"Got significant changes {cp.GetSignificantChanges()}"
+            assert cp.GetSpecChanges() == [], f"Got spec changes {cp.GetSpecChanges()}"
+            assert cp.GetPrimChanges() == [], f"Got prim changes {cp.GetPrimChanges()}"
 
 if __name__ == "__main__":
     unittest.main()

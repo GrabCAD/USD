@@ -25,16 +25,16 @@
 import sys, unittest
 from pxr import Sdf,Pcp,Usd,Tf
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class TestUsdReferences(unittest.TestCase):
     def test_API(self):
         for fmt in allFormats:
-            s1 = Usd.Stage.CreateInMemory('API-s1.'+fmt)
-            s2 = Usd.Stage.CreateInMemory('API-s2.'+fmt)
+            s1 = Usd.Stage.CreateInMemory(f'API-s1.{fmt}')
+            s2 = Usd.Stage.CreateInMemory(f'API-s2.{fmt}')
             srcPrim = s1.OverridePrim('/src')
             trgPrimInternal = s1.OverridePrim('/trg_internal')
-            srcPrimSpec = s1.GetRootLayer().GetPrimAtPath('/src')    
+            srcPrimSpec = s1.GetRootLayer().GetPrimAtPath('/src')
             trgPrim = s2.OverridePrim('/trg')
             s2.GetRootLayer().defaultPrim = 'trg'
 
@@ -84,7 +84,7 @@ class TestUsdReferences(unittest.TestCase):
     def test_DefaultPrimBasics(self):
         # create a layer, set DefaultPrim, then reference it.
         for fmt in allFormats:
-            targLyr = Sdf.Layer.CreateAnonymous('DefaultPrimBasics.'+fmt)
+            targLyr = Sdf.Layer.CreateAnonymous(f'DefaultPrimBasics.{fmt}')
 
             def makePrim(name, attrDefault):
                 primSpec = Sdf.CreatePrimInLayer(targLyr, name)
@@ -99,7 +99,7 @@ class TestUsdReferences(unittest.TestCase):
             targLyr.defaultPrim = 'target1'
 
             # create a new layer and reference the first.
-            srcLyr = Sdf.Layer.CreateAnonymous('DefaultPrimBasics-new.'+fmt)
+            srcLyr = Sdf.Layer.CreateAnonymous(f'DefaultPrimBasics-new.{fmt}')
             srcPrimSpec = Sdf.CreatePrimInLayer(srcLyr, '/source')
 
             # create a stage with srcLyr.
@@ -117,7 +117,7 @@ class TestUsdReferences(unittest.TestCase):
     def test_DefaultPrimChangeProcessing(self):
         for fmt in allFormats:
             # create a layer, set DefaultPrim, then reference it.
-            targLyr = Sdf.Layer.CreateAnonymous('DefaultPrimChangeProcessing.'+fmt)
+            targLyr = Sdf.Layer.CreateAnonymous(f'DefaultPrimChangeProcessing.{fmt}')
 
             def makePrim(name, attrDefault):
                 primSpec = Sdf.CreatePrimInLayer(targLyr, name)
@@ -132,8 +132,7 @@ class TestUsdReferences(unittest.TestCase):
             targLyr.defaultPrim = 'target1'
 
             # create a new layer and reference the first.
-            srcLyr = Sdf.Layer.CreateAnonymous(
-                'DefaultPrimChangeProcessing-new.'+fmt)
+            srcLyr = Sdf.Layer.CreateAnonymous(f'DefaultPrimChangeProcessing-new.{fmt}')
             srcPrimSpec = Sdf.CreatePrimInLayer(srcLyr, '/source')
             srcPrimSpec.referenceList.Add(Sdf.Reference(targLyr.identifier))
 
@@ -158,7 +157,7 @@ class TestUsdReferences(unittest.TestCase):
 
     def test_InternalReferences(self):
         for fmt in allFormats:
-            targLyr = Sdf.Layer.CreateAnonymous('InternalReferences.'+fmt)
+            targLyr = Sdf.Layer.CreateAnonymous(f'InternalReferences.{fmt}')
 
             def makePrim(name, attrDefault):
                 primSpec = Sdf.CreatePrimInLayer(targLyr, name)
@@ -188,8 +187,8 @@ class TestUsdReferences(unittest.TestCase):
 
     def test_SubrootReferences(self):
         for fmt in allFormats:
-            refLayer = Sdf.Layer.CreateAnonymous('SubrootReferences.'+fmt)
-            
+            refLayer = Sdf.Layer.CreateAnonymous(f'SubrootReferences.{fmt}')
+
             def makePrim(name, attrDefault):
                 primSpec = Sdf.CreatePrimInLayer(refLayer, name)
                 primSpec.specifier = Sdf.SpecifierDef
@@ -220,7 +219,7 @@ class TestUsdReferences(unittest.TestCase):
 
     def test_PrependVsAppend(self):
         for fmt in allFormats:
-            layer = Sdf.Layer.CreateAnonymous('PrependVsAppend.'+fmt)
+            layer = Sdf.Layer.CreateAnonymous(f'PrependVsAppend.{fmt}')
 
             def makePrim(name, attrDefault):
                 primSpec = Sdf.CreatePrimInLayer(layer, name)
@@ -259,14 +258,14 @@ class TestUsdReferences(unittest.TestCase):
     def test_InternalReferenceMapping(self):
         for fmt in allFormats:
             # Create test scenegraph
-            refLayer = Sdf.Layer.CreateAnonymous('InternalRefMapping_ref.'+fmt)
+            refLayer = Sdf.Layer.CreateAnonymous(f'InternalRefMapping_ref.{fmt}')
             refSpec = Sdf.PrimSpec(refLayer, 'Ref', Sdf.SpecifierDef)
             subRefSpec = Sdf.PrimSpec(refSpec, 'SubrootRef', Sdf.SpecifierDef)
             childRefSpec = Sdf.PrimSpec(refSpec, 'Child', Sdf.SpecifierDef)
             refSpec2 = Sdf.PrimSpec(refLayer, 'Ref2', Sdf.SpecifierDef)
             childRefSpec2 = Sdf.PrimSpec(refSpec2, 'Child', Sdf.SpecifierDef)
 
-            stage = Usd.Stage.CreateInMemory('InternalRefMapping.'+fmt)
+            stage = Usd.Stage.CreateInMemory(f'InternalRefMapping.{fmt}')
             prim = stage.DefinePrim('/Root')
             prim.GetReferences().AddReference(refLayer.identifier, refSpec.path)
             prim = stage.GetPrimAtPath('/Root')
@@ -326,7 +325,7 @@ class TestUsdReferences(unittest.TestCase):
 
     def test_InternalReferenceMappingVariants(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}", sessionLayer=None)
 
             # Create test scenegraph with variant
             refPrim = stage.DefinePrim("/Root")
@@ -336,7 +335,7 @@ class TestUsdReferences(unittest.TestCase):
             with vset.GetVariantEditContext():
                 stage.DefinePrim("/Root/SubrootRef")
                 stage.DefinePrim("/Root/Child")
-            
+
             # Set edit target inside the variant and add a internal sub-root
             # reference to another prim in the same variant.
             with vset.GetVariantEditContext():
@@ -347,7 +346,7 @@ class TestUsdReferences(unittest.TestCase):
             # Check that authored reference does *not* include variant
             # selection.
             childPrimSpec = \
-                stage.GetRootLayer().GetPrimAtPath("/Root{v=x}Child")
+                    stage.GetRootLayer().GetPrimAtPath("/Root{v=x}Child")
             expectedRefs = Sdf.ReferenceListOp()
             expectedRefs.prependedItems = [
                 Sdf.Reference(primPath="/Root/SubrootRef")

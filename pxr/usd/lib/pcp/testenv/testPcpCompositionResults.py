@@ -92,8 +92,7 @@ for layerPath in args.layer:
     def WalkNodes(node):
         yield node
         for child in node.children:
-            for descendant in WalkNodes(child):
-                yield descendant
+            yield from WalkNodes(child)
 
     # Dump the layer stack.
     errors = []

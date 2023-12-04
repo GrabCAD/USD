@@ -32,11 +32,9 @@ testPaths = [
     Sdf.Path('/a/b/c')
     ]
 
-testMapFuncs = []
-
 # Test null function
 null = Pcp.MapFunction()
-testMapFuncs.append(null)
+testMapFuncs = [null]
 assert null.isNull
 assert not null.isIdentity
 assert null.timeOffset == Sdf.LayerOffset()
@@ -150,9 +148,7 @@ assert m5.timeOffset == offset1
 assert m6.timeOffset == offset2
 assert m5.Compose(m6).timeOffset == (offset1 * offset2)
 
-testMapFuncs.append(m5)
-testMapFuncs.append(m6)
-
+testMapFuncs.extend((m5, m6))
 # Test equality/inequality
 for i in range(len(testMapFuncs)):
     for j in range(len(testMapFuncs)):

@@ -33,8 +33,7 @@ class TestUsdShadeMaterialBaseMaterial(unittest.TestCase):
         # we want it to appear at the top
         rootPrim = stage.DefinePrim("/ModelShading")
 
-        materialsPath = rootPrim.GetPath().AppendChild('Materials')
-        return materialsPath
+        return rootPrim.GetPath().AppendChild('Materials')
 
 
     def _TestShading(self, stage, materialsPath):

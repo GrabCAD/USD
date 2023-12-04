@@ -199,21 +199,21 @@ class OutlineRect(Rect):
         Rect.__init__(self)
 
     @classmethod
-    def compileProgram(self):
-        if self._glslProgram:
-            return self._glslProgram
+    def compileProgram(cls):
+        if cls._glslProgram:
+            return cls._glslProgram
         from OpenGL import GL
         import ctypes
 
         # prep a quad line vbo
-        self._vbo = GL.glGenBuffers(1)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
+        cls._vbo = GL.glGenBuffers(1)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, cls._vbo)
         st = [0, 0, 1, 0, 1, 1, 0, 1]
         GL.glBufferData(GL.GL_ARRAY_BUFFER, len(st)*4,
                         (ctypes.c_float*len(st))(*st), GL.GL_STATIC_DRAW)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-        self._glslProgram = GLSLProgram(
+        cls._glslProgram = GLSLProgram(
             # for OpenGL 3.1 or later
             """#version 140
                uniform vec4 rect;
@@ -235,9 +235,10 @@ class OutlineRect(Rect):
             """#version 120
                uniform vec4 color;
                void main() { gl_FragColor = color; }""",
-            ["rect", "color"])
+            ["rect", "color"],
+        )
 
-        return self._glslProgram
+        return cls._glslProgram
 
     def glDraw(self, color):
         from OpenGL import GL
@@ -276,21 +277,21 @@ class FilledRect(Rect):
         Rect.__init__(self)
 
     @classmethod
-    def compileProgram(self):
-        if self._glslProgram:
-            return self._glslProgram
+    def compileProgram(cls):
+        if cls._glslProgram:
+            return cls._glslProgram
         from OpenGL import GL
         import ctypes
 
         # prep a quad line vbo
-        self._vbo = GL.glGenBuffers(1)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
+        cls._vbo = GL.glGenBuffers(1)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, cls._vbo)
         st = [0, 0, 1, 0, 0, 1, 1, 1]
         GL.glBufferData(GL.GL_ARRAY_BUFFER, len(st)*4,
                         (ctypes.c_float*len(st))(*st), GL.GL_STATIC_DRAW)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-        self._glslProgram = GLSLProgram(
+        cls._glslProgram = GLSLProgram(
             # for OpenGL 3.1 or later
             """#version 140
                uniform vec4 rect;
@@ -312,9 +313,10 @@ class FilledRect(Rect):
             """#version 120
                uniform vec4 color;
                void main() { gl_FragColor = color; }""",
-            ["rect", "color"])
+            ["rect", "color"],
+        )
 
-        return self._glslProgram
+        return cls._glslProgram
 
     def glDraw(self, color):
         #don't draw if too small
@@ -407,21 +409,21 @@ class Reticles(Prim2DDrawTask):
         width = float(qglwidget.width())
         height = float(qglwidget.height())
         prims = [ ]
-        ascenders = [0, 0]
-        descenders = [0, 0]
-        if inside:
-            descenders = [7, 15]
-        if outside:
-            ascenders = [7, 15]
+        descenders = [7, 15] if inside else [0, 0]
+        ascenders = [7, 15] if outside else [0, 0]
+        w = 2.6
         # vertical reticles on the top and bottom
         for i in range(5):
-            w = 2.6
             h = ascenders[i & 1] + descenders[i & 1]
             x = croppedViewport[0] - (w / 2) + ((i + 1) * croppedViewport[2]) / 6
             bottomY = croppedViewport[1] - ascenders[i & 1]
             topY = croppedViewport[1] + croppedViewport[3] - descenders[i & 1]
-            prims.append(FilledRect.fromXYWH((x, bottomY, w, h)))
-            prims.append(FilledRect.fromXYWH((x, topY, w, h)))
+            prims.extend(
+                (
+                    FilledRect.fromXYWH((x, bottomY, w, h)),
+                    FilledRect.fromXYWH((x, topY, w, h)),
+                )
+            )
         # horizontal reticles on the left and right
         for i in range(5):
             w = ascenders[i & 1] + descenders[i & 1]
@@ -429,9 +431,12 @@ class Reticles(Prim2DDrawTask):
             leftX = croppedViewport[0] - ascenders[i & 1]
             rightX = croppedViewport[0] + croppedViewport[2] - descenders[i & 1]
             y = croppedViewport[1] - (h / 2) + ((i + 1) * croppedViewport[3]) / 6
-            prims.append(FilledRect.fromXYWH((leftX, y, w, h)))
-            prims.append(FilledRect.fromXYWH((rightX, y, w, h)))
-
+            prims.extend(
+                (
+                    FilledRect.fromXYWH((leftX, y, w, h)),
+                    FilledRect.fromXYWH((rightX, y, w, h)),
+                )
+            )
         self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
                 for p in prims]
         self._colors = [ self._outlineColor ] * len(self._prims)
@@ -547,7 +552,7 @@ class HUD():
         for key in keys:
             if not dic.has_key(key):
                 continue
-            line = key.rjust(margin) + ": " + str(prettyPrint(dic[key]))
+            line = f"{key.rjust(margin)}: {str(prettyPrint(dic[key]))}"
             # Shadow of text
             shadow = Gf.ConvertDisplayToLinear(Gf.Vec3f(.2, .2, .2))
             color.setRgbF(shadow[0], shadow[1], shadow[2])
@@ -567,7 +572,7 @@ class HUD():
     def draw(self, qglwidget):
         from OpenGL import GL
 
-        if (self._glslProgram == None):
+        if self._glslProgram is None:
             self.compileProgram()
 
         if (self._glslProgram.program == 0):
@@ -851,7 +856,7 @@ class StageView(QtOpenGL.QGLWidget):
                               RenderModes.HIDDEN_SURFACE_WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME}
 
         self._renderParams = UsdImagingGL.GL.RenderParams()
-        self._dist = 50 
+        self._dist = 50
         self._bbox = Gf.BBox3d()
         self._selectionBBox = Gf.BBox3d()
         self._selectionBrange = Gf.Range3d()
@@ -870,7 +875,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._fpsHUDInfo = dict()
         self._fpsHUDKeys = []
         self._upperHUDInfo = dict()
-        self._HUDStatKeys = list()
+        self._HUDStatKeys = []
 
         self._glPrimitiveGeneratedQuery = None
         self._glTimeElapsedQuery = None
@@ -905,16 +910,10 @@ class StageView(QtOpenGL.QGLWidget):
             t.PrintTime('shut down Hydra')
 
     def GetRendererPlugins(self):
-        if self._renderer:
-            return self._renderer.GetRendererPlugins()
-        else:
-            return []
+        return self._renderer.GetRendererPlugins() if self._renderer else []
 
     def GetRendererPluginDisplayName(self, plugId):
-        if self._renderer:
-            return self._renderer.GetRendererPluginDesc(plugId)
-        else:
-            return ""
+        return self._renderer.GetRendererPluginDesc(plugId) if self._renderer else ""
 
     def SetRendererPlugin(self, plugId):
         if self._renderer:
@@ -940,7 +939,7 @@ class StageView(QtOpenGL.QGLWidget):
 
     # simple GLSL program for axis/bbox drawings
     def GetSimpleGLSLProgram(self):
-        if self._simpleGLSLProgram == None:
+        if self._simpleGLSLProgram is None:
             self._simpleGLSLProgram = GLSLProgram(
             """#version 140
                uniform mat4 mvpMatrix;
@@ -1058,7 +1057,11 @@ class StageView(QtOpenGL.QGLWidget):
         data = []
         for camera in self._allSceneCameras:
             # Don't draw guides for the active camera.
-            if camera == self._dataModel.viewSettings.cameraPrim or not (camera and camera.IsActive()):
+            if (
+                camera == self._dataModel.viewSettings.cameraPrim
+                or not camera
+                or not camera.IsActive()
+            ):
                 continue
 
             gfCamera = UsdGeom.Camera(camera).GetCamera(
@@ -1177,13 +1180,17 @@ class StageView(QtOpenGL.QGLWidget):
         fits the prim's bounding box in the frame with a roughly 10% margin.
         '''
 
-        # Only compute BBox if forced, if needed for drawing,
-        # or if this is the first time running.
-        computeBBox = forceComputeBBox or \
-                     (self._dataModel.viewSettings.showBBoxes and
-                      (self._dataModel.viewSettings.showAABBox or self._dataModel.viewSettings.showOBBox))\
-                     or self._bbox.GetRange().IsEmpty()
-        if computeBBox:
+        if (
+            computeBBox := forceComputeBBox
+            or (
+                self._dataModel.viewSettings.showBBoxes
+                and (
+                    self._dataModel.viewSettings.showAABBox
+                    or self._dataModel.viewSettings.showOBBox
+                )
+            )
+            or self._bbox.GetRange().IsEmpty()
+        ):
             self.recomputeBBox()
         if resetCam:
             self.resetCam(frameFit)
@@ -1274,8 +1281,7 @@ class StageView(QtOpenGL.QGLWidget):
         except Tf.ErrorException as e:
             # If we encounter an error during a render, we want to continue
             # running. Just log the error and continue.
-            sys.stderr.write(
-                "ERROR: Usdview encountered an error while rendering.{}\n".format(e))
+            sys.stderr.write(f"ERROR: Usdview encountered an error while rendering.{e}\n")
         self._forceRefresh = False
 
 
@@ -1302,9 +1308,9 @@ class StageView(QtOpenGL.QGLWidget):
     def computeGfCameraForCurrentCameraPrim(self):
         cameraPrim = self._dataModel.viewSettings.cameraPrim
         if cameraPrim and cameraPrim.IsActive():
-            gfCamera = UsdGeom.Camera(cameraPrim).GetCamera(
-                self._dataModel.currentFrame)
-            return gfCamera
+            return UsdGeom.Camera(cameraPrim).GetCamera(
+                self._dataModel.currentFrame
+            )
         else:
             return None
 
@@ -1373,15 +1379,15 @@ class StageView(QtOpenGL.QGLWidget):
         since we do not want a restore operation to put us out of sync
         with respect to our owner's time.
         """
-        viewState = {}
-        viewState["_cameraPrim"] = self._dataModel.viewSettings.cameraPrim
-        viewState["_stageIsZup"] = self._stageIsZup
-        viewState["_overrideNear"] = self._overrideNear
-        viewState["_overrideFar"] = self._overrideFar
-        # Since FreeCamera is a compound/class object, we must copy
-        # it more deeply
-        viewState["_freeCamera"] = self._dataModel.viewSettings.freeCamera.clone() if self._dataModel.viewSettings.freeCamera else None
-        return viewState
+        return {
+            "_cameraPrim": self._dataModel.viewSettings.cameraPrim,
+            "_stageIsZup": self._stageIsZup,
+            "_overrideNear": self._overrideNear,
+            "_overrideFar": self._overrideFar,
+            "_freeCamera": self._dataModel.viewSettings.freeCamera.clone()
+            if self._dataModel.viewSettings.freeCamera
+            else None,
+        }
 
     def restoreViewState(self, viewState):
         """Restore view parameters from 'viewState', and redraw"""

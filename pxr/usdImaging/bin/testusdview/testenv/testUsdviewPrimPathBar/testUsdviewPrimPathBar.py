@@ -50,7 +50,7 @@ def _assertPathIsPrim(appController):
         assert Sdf.Path(p).IsAbsoluteRootOrPrimPath()
 
 def _assertPathIsProp(appController):
-    for p in _getPath(appController).split(','):
+    for _ in _getPath(appController).split(','):
         assert Sdf.Path(_getPath(appController)).IsPropertyPath()
 
 def _assertSelectedPrims(appController, primNames):

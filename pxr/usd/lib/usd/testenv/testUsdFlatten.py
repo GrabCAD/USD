@@ -60,9 +60,11 @@ def _CompareMetadata(composed, flat, indent):
             continue
 
         print (" " * indent) + ":",cKey
-        assert cKey in fdata, str(composed.GetPath()) + " : " + cKey
-        assert composed.GetMetadata(cKey) == flat.GetMetadata(cKey), "GetMetadata -- " + str(composed.GetPath()) + " : " + cKey
-        assert cdata[cKey] == fdata[cKey], str(composed.GetPath()) + " : " + cKey
+        assert cKey in fdata, f"{str(composed.GetPath())} : {cKey}"
+        assert composed.GetMetadata(cKey) == flat.GetMetadata(
+            cKey
+        ), f"GetMetadata -- {str(composed.GetPath())} : {cKey}"
+        assert cdata[cKey] == fdata[cKey], f"{str(composed.GetPath())} : {cKey}"
 
 class TestUsdFlatten(unittest.TestCase):
     def test_Flatten(self):
@@ -195,7 +197,7 @@ class TestUsdFlatten(unittest.TestCase):
 
     def test_FlattenRelationshipTargets(self):
         basePath = 'relationshipTargets/'
-        stageFile = basePath+'source.usda'
+        stageFile = f'{basePath}source.usda'
 
         stage = Usd.Stage.Open(stageFile)
         assert stage
@@ -205,7 +207,7 @@ class TestUsdFlatten(unittest.TestCase):
         assert rel
         self.assertEqual(rel.GetTargets(), [Sdf.Path('/bar/baz')])
 
-        resultFile = basePath+'result.usda'
+        resultFile = f'{basePath}result.usda'
         stage.Export(resultFile)
 
         resultStage = Usd.Stage.Open(resultFile)
@@ -219,13 +221,13 @@ class TestUsdFlatten(unittest.TestCase):
 
     def test_FlattenConnections(self):
         basePath = 'connections/'
-        stageFile = basePath+'source.usda'
+        stageFile = f'{basePath}source.usda'
 
         stage = Usd.Stage.Open(stageFile)
         assert stage
         barPrim = stage.GetPrimAtPath('/bar')
         assert barPrim
-        
+
         fooAttr  = barPrim.GetAttribute('foo')
         assert fooAttr
         self.assertEqual(fooAttr.GetConnections(), [Sdf.Path('/bar/baz.foo')])
@@ -236,7 +238,7 @@ class TestUsdFlatten(unittest.TestCase):
         assert basAttr
         self.assertEqual(basAttr.GetConnections(), [Sdf.Path('/bar.bas')])
 
-        resultFile = basePath+'result.usda'
+        resultFile = f'{basePath}result.usda'
         stage.Export(resultFile)
 
         resultStage = Usd.Stage.Open(resultFile)
@@ -293,21 +295,22 @@ class TestUsdFlatten(unittest.TestCase):
         # All asset paths in the flattened result should be anchored,
         # even though the asset being referred to does not exist.
         attr = resultLayer.GetAttributeAtPath("/AssetPathTest.assetPath")
-        
+
         timeSamples = attr.GetInfo("timeSamples")
         self.assertEqual(os.path.normpath(timeSamples[0].path),
                          os.path.abspath("assetPaths/asset.usda"))
         self.assertEqual(os.path.normpath(timeSamples[1].path),
                          os.path.abspath("assetPaths/asset.usda"))
-        
+
         self.assertEqual(
             os.path.normpath(attr.GetInfo("default").path), 
             os.path.abspath("assetPaths/asset.usda"))
-        
+
         attr = resultLayer.GetAttributeAtPath("/AssetPathTest.assetPathArray")
         self.assertEqual(
-            list([os.path.normpath(p.path) for p in attr.GetInfo("default")]),
-            [os.path.abspath("assetPaths/asset.usda")])
+            [os.path.normpath(p.path) for p in attr.GetInfo("default")],
+            [os.path.abspath("assetPaths/asset.usda")],
+        )
 
         prim = resultLayer.GetPrimAtPath("/AssetPathTest")
         metadataDict = prim.GetInfo("customData")
@@ -315,18 +318,18 @@ class TestUsdFlatten(unittest.TestCase):
             os.path.normpath(metadataDict["assetPath"].path),
             os.path.abspath("assetPaths/asset.usda"))
         self.assertEqual(
-            list([os.path.normpath(p.path) 
-                  for p in metadataDict["assetPathArray"]]),
-            [os.path.abspath("assetPaths/asset.usda")])
-            
+            [os.path.normpath(p.path) for p in metadataDict["assetPathArray"]],
+            [os.path.abspath("assetPaths/asset.usda")],
+        )
+
         metadataDict = metadataDict["subDict"]
         self.assertEqual(
             os.path.normpath(metadataDict["assetPath"].path),
             os.path.abspath("assetPaths/asset.usda"))
         self.assertEqual(
-            list([os.path.normpath(p.path) 
-                  for p in metadataDict["assetPathArray"]]),
-            [os.path.abspath("assetPaths/asset.usda")])
+            [os.path.normpath(p.path) for p in metadataDict["assetPathArray"]],
+            [os.path.abspath("assetPaths/asset.usda")],
+        )
 
 
 if __name__ == "__main__":

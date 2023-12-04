@@ -124,8 +124,9 @@ class TestUsdGeomCollectionAPI(unittest.TestCase):
         for name in validCollectionNames:
             collection = UsdGeom.CollectionAPI(root, name)
             (valid, reason) = collection.Validate()
-            self.assertTrue(valid, "Collection '%s' was found to be invalid: %s" % 
-                (name, reason))
+            self.assertTrue(
+                valid, f"Collection '{name}' was found to be invalid: {reason}"
+            )
 
     def test_ErrorCases(self):
         invalidCollectionNames = ("nonExistentCollection", "faceCountsMismatch", 

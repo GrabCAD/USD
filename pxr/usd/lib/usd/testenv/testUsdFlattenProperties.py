@@ -133,7 +133,7 @@ class TestUsdFlattenProperties(unittest.TestCase):
         """Tests that layer offsets are taken into account when flattening
         attribute time samples."""
         srcAttr = self.stage.GetPrimAtPath("/OffsetTimeSamples") \
-                            .GetAttribute("a")
+                                .GetAttribute("a")
 
         if Usd.UsesInverseLayerOffset():
             self.assertEqual(self._GetTimeSamples(srcAttr), 
@@ -159,26 +159,23 @@ class TestUsdFlattenProperties(unittest.TestCase):
                 self._GetTimeSamplesInLayer(
                     self.rootLayer, "/OffsetTimeSamplesRoot.a"),
                 { 10: 100, 20: 1000 })
-            
+
         with Usd.EditContext(
-            self.stage, self.stage.GetEditTargetForLocalLayer(self.subLayer)):
+                self.stage, self.stage.GetEditTargetForLocalLayer(self.subLayer)):
             dstAttr = srcAttr.FlattenTo(
                 self.stage.OverridePrim("/OffsetTimeSamplesSublayer"))
-            
+
             if Usd.UsesInverseLayerOffset():
                 self.assertEqual(
                     self._GetTimeSamples(dstAttr), { -10: 100, 0: 1000 })
-                self.assertEqual(
-                    self._GetTimeSamplesInLayer(
-                        self.subLayer, "/OffsetTimeSamplesSublayer.a"),
-                    { 0: 100, 10: 1000 })
             else:
                 self.assertEqual(
                     self._GetTimeSamples(dstAttr), { 10: 100, 20: 1000 })
-                self.assertEqual(
-                    self._GetTimeSamplesInLayer(
-                        self.subLayer, "/OffsetTimeSamplesSublayer.a"),
-                    { 0: 100, 10: 1000 })
+
+            self.assertEqual(
+                self._GetTimeSamplesInLayer(
+                    self.subLayer, "/OffsetTimeSamplesSublayer.a"),
+                { 0: 100, 10: 1000 })
 
     def test_DefaultAndTimeSamples(self):
         """Tests that properties with both a default value and time samples

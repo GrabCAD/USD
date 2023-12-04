@@ -30,9 +30,7 @@ class TestUsdGeomCamera(unittest.TestCase):
         val = schema.GetProjectionAttr().Get(time)
         if val == UsdGeom.Tokens.perspective:
             return Gf.Camera.Perspective
-        if val == UsdGeom.Tokens.orthographic:
-            return Gf.Camera.Orthographic
-        return None
+        return Gf.Camera.Orthographic if val == UsdGeom.Tokens.orthographic else None
 
     def _GetSchemaClippingRange(self, schema, time):
         val = schema.GetClippingRangeAttr().Get(time)

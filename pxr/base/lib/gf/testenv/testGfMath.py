@@ -29,7 +29,7 @@ import unittest
 from pxr.Gf import *
 
 def err( msg ):
-    return "ERROR: " + msg + " failed"
+    return f"ERROR: {msg} failed"
 
 class TestGfMath(unittest.TestCase):
 

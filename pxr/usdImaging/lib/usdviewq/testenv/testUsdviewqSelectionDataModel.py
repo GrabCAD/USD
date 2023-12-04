@@ -41,7 +41,7 @@ class FakePrim:
 
     def __repr__(self):
 
-        return "FakePrim({})".format(repr(str(self._path)))
+        return f"FakePrim({repr(str(self._path))})"
 
     def _addProp(self, prop):
 
@@ -74,14 +74,14 @@ class FakeProp:
 
         self._prim = prim
         self._name = name
-        self._path = Sdf.Path(str(prim.GetPath()) + "." + self._name)
+        self._path = Sdf.Path(f"{str(prim.GetPath())}.{self._name}")
         self._valid = valid
 
         self._prim._addProp(self)
 
     def __repr__(self):
 
-        return "FakeProp({})".format(repr(str(self._path)))
+        return f"FakeProp({repr(str(self._path))})"
 
     @property
     def name(self):
@@ -111,8 +111,7 @@ class FakeComputedProp:
 
     def __repr__(self):
 
-        return "FakeComputedProp({}, {})".format(
-            repr(str(self._prim.GetPath())), self._name)
+        return f"FakeComputedProp({repr(str(self._prim.GetPath()))}, {self._name})"
 
     def __eq__(self, other):
 

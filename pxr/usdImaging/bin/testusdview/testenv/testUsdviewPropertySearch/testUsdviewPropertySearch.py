@@ -33,8 +33,8 @@ def _assertSelectedProp(appController, propName):
     else:
         assert len(selectedComputed) == 1
         selectedPropName = selectedComputed[0].GetName()
-    
-    assert propName == selectedPropName, propName + '!=' + selectedPropName
+
+    assert propName == selectedPropName, f'{propName}!={selectedPropName}'
 
 def _selectPrim(appController, primName):
     appController._ui.primViewLineEdit.setText(primName)

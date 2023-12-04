@@ -241,7 +241,7 @@ class TestUsdInstanceProxy(unittest.TestCase):
              master.GetPath().AppendPath('props/Prop_2')])
 
         # Load and unload models through instance proxies.
-        self.assertFalse(all([p.IsLoaded() for p in loadableProps]))
+        self.assertFalse(all(p.IsLoaded() for p in loadableProps))
 
         s.GetPrimAtPath('/World/sets/Set_1/props/Prop_1').Load()
         self.assertTrue(
@@ -254,10 +254,10 @@ class TestUsdInstanceProxy(unittest.TestCase):
             s.GetPrimAtPath('/World/sets/Set_2/props/Prop_2').IsLoaded())
 
         s.GetPrimAtPath('/World/sets/Set_2/props/Prop_2').Load()
-        self.assertTrue(all([p.IsLoaded() for p in loadableProps]))
+        self.assertTrue(all(p.IsLoaded() for p in loadableProps))
 
         s.LoadAndUnload([], ['/World/sets/Set_1/props'])
-        self.assertFalse(all([p.IsLoaded() for p in loadableProps]))
+        self.assertFalse(all(p.IsLoaded() for p in loadableProps))
 
     def test_PrimRange(self):
         s = Usd.Stage.Open('nested/root.usda')

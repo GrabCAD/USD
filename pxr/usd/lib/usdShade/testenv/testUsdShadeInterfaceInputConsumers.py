@@ -145,34 +145,58 @@ class TestUsdShadeInterfaceInputConsumer(unittest.TestCase):
 
         for interfaceInput, consumers in interfaceConsumersMapping.iteritems():
             if interfaceInput.GetAttr().GetBaseName() == "floatInput":
-                self.assertEqual(set([i.GetAttr().GetBaseName() for i in consumers]), 
-                                 set(["nodeGraph1FloatInput", "nodeGraph2FloatInput",
-                                      "shader1Input1", "shader2Input2"]))
+                self.assertEqual(
+                    {i.GetAttr().GetBaseName() for i in consumers},
+                    {
+                        "nodeGraph1FloatInput",
+                        "nodeGraph2FloatInput",
+                        "shader1Input1",
+                        "shader2Input2",
+                    },
+                )
             elif interfaceInput.GetAttr().GetBaseName() == "colorInput":
-                self.assertEqual(set([i.GetAttr().GetBaseName() for i in consumers]), 
-                                 set(["nodeGraph1ColorInput", "nodeGraph2ColorInput", 
-                                      "shader2Input1", "shader1Input2"]))
+                self.assertEqual(
+                    {i.GetAttr().GetBaseName() for i in consumers},
+                    {
+                        "nodeGraph1ColorInput",
+                        "nodeGraph2ColorInput",
+                        "shader2Input1",
+                        "shader1Input2",
+                    },
+                )
             else:
-                Tf.RaiseRuntimeError("Unexpected input: %s" % 
-                                     interfaceInput.GetFullName())
+                Tf.RaiseRuntimeError(f"Unexpected input: {interfaceInput.GetFullName()}")
 
         transitiveInterfaceMapping = material.ComputeInterfaceInputConsumersMap(True)
         self.assertEqual(len(transitiveInterfaceMapping), 2)
 
         for interfaceInput, consumers in transitiveInterfaceMapping.iteritems():
             if interfaceInput.GetAttr().GetBaseName() == "floatInput":
-                self.assertEqual(set([i.GetAttr().GetBaseName() for i in consumers]), 
-                                 set(["nestedShader1Input2", "nestedShader2Input1",
-                                      "shader1Input1", "shader2Input2", 
-                                      "nestedShader3Input2", "nestedNodeGraphInput1"]))
+                self.assertEqual(
+                    {i.GetAttr().GetBaseName() for i in consumers},
+                    {
+                        "nestedShader1Input2",
+                        "nestedShader2Input1",
+                        "shader1Input1",
+                        "shader2Input2",
+                        "nestedShader3Input2",
+                        "nestedNodeGraphInput1",
+                    },
+                )
             elif interfaceInput.GetAttr().GetBaseName() == "colorInput":
-                self.assertEqual(set([i.GetAttr().GetBaseName() for i in consumers]), 
-                                 set(["nestedShader1Input1", "nestedShader2Input2",
-                                      "shader1Input2", "shader2Input1",
-                                      "nestedShader3Input1", "nestedNodeGraphInput2"]))
+                self.assertEqual(
+                    {i.GetAttr().GetBaseName() for i in consumers},
+                    {
+                        "nestedShader1Input1",
+                        "nestedShader2Input2",
+                        "shader1Input2",
+                        "shader2Input1",
+                        "nestedShader3Input1",
+                        "nestedNodeGraphInput2",
+                    },
+                )
             else:
-                Tf.RaiseRuntimeError("Unexpected input: %s" % 
-                                     interfaceInput.GetFullName())
+                Tf.RaiseRuntimeError(f"Unexpected input: {interfaceInput.GetFullName()}")
 
 if __name__ == '__main__':
     unittest.main()

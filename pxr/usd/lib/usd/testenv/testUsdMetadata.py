@@ -25,12 +25,12 @@
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf, Plug
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class TestUsdMetadata(unittest.TestCase):
     def test_Hidden(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory('TestHidden.'+fmt)
+            stage = Usd.Stage.CreateInMemory(f'TestHidden.{fmt}')
 
             stageRoot = stage.GetPseudoRoot()
             foo = stage.OverridePrim("/Foo")
@@ -316,7 +316,7 @@ class TestUsdMetadata(unittest.TestCase):
         '''Test basic CustomData API, including by-key-path API'''
 
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestBasicCustomData.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestBasicCustomData.{fmt}')
             p = s.OverridePrim('/foo')
 
             assert not p.HasCustomData()
@@ -399,7 +399,7 @@ class TestUsdMetadata(unittest.TestCase):
     def test_ComposedCustomData(self):
         '''Test customData composition (dictionary-wise)'''
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestComposedCustomData.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestComposedCustomData.{fmt}')
 
             # Create two prims, 'weaker' and 'stronger', 'stronger' references
             # 'weaker'.
@@ -442,7 +442,7 @@ class TestUsdMetadata(unittest.TestCase):
         '''Test basic metadata API, including by-key-path API'''
 
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestBasicCustomDataViaMetadataAPI.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestBasicCustomDataViaMetadataAPI.{fmt}')
             p = s.OverridePrim('/foo')
 
             assert not p.HasMetadata('customData')
@@ -503,8 +503,7 @@ class TestUsdMetadata(unittest.TestCase):
     def test_ComposedCustomDataViaMetadataAPI(self):
         '''Test customData composition (dictionary-wise)'''
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory(
-                'TestComposedCustomDataViaMetadataAPI.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestComposedCustomDataViaMetadataAPI.{fmt}')
 
             # Create two prims, 'weaker' and 'stronger', 'stronger' references
             # 'weaker'.
@@ -559,7 +558,7 @@ class TestUsdMetadata(unittest.TestCase):
         ('Ensure only expected required fields are returned by '
          'GetAllAuthoredMetadata, test for bug 98419')
         for fmt in allFormats:
-            a = Usd.Stage.CreateInMemory('TestBasicRequiredFields.'+fmt)
+            a = Usd.Stage.CreateInMemory(f'TestBasicRequiredFields.{fmt}')
             b = a.OverridePrim('/hello')
             attr = b.CreateAttribute('foo', Sdf.ValueTypeNames.Double)
             attr.Set(1.234)
@@ -567,16 +566,15 @@ class TestUsdMetadata(unittest.TestCase):
             outs = ['allowedTokens']
             metadata = attr.GetAllAuthoredMetadata()
             for key in ins:
-                assert key in metadata, ("expected %s in %s" % (key, metadata))
+                assert key in metadata, f"expected {key} in {metadata}"
             for key in outs:
-                assert key not in metadata, ("expected %s not in %s" %
-                                             (key, metadata))
+                assert key not in metadata, f"expected {key} not in {metadata}"
 
     def test_BasicListOpMetadata(self):
         '''Tests basic metadata API with supported list op types'''
         def _TestBasic(fieldName, listOp, expectedListOp):
             for fmt in allFormats:
-                s = Usd.Stage.CreateNew("TestBasicListOpMetadata."+fmt)
+                s = Usd.Stage.CreateNew(f"TestBasicListOpMetadata.{fmt}")
 
                 prim = s.OverridePrim('/Root')
 
@@ -588,7 +586,7 @@ class TestUsdMetadata(unittest.TestCase):
                 assert prim.HasMetadata(fieldName)
                 assert prim.HasAuthoredMetadata(fieldName)
                 self.assertEqual(prim.GetMetadata(fieldName), expectedListOp)
-        
+
                 prim.ClearMetadata(fieldName)
                 assert not prim.HasMetadata(fieldName)
                 assert not prim.HasAuthoredMetadata(fieldName)
@@ -661,9 +659,9 @@ class TestUsdMetadata(unittest.TestCase):
     def test_ComposedListOpMetadata(self):
         '''Tests composition of list op-valued metadata fields'''
         def _TestComposition(fieldName, weakListOp, strongListOp,
-                             expectedListOp):
+                                 expectedListOp):
             for fmt in allFormats:
-                s = Usd.Stage.CreateNew("TestComposedListOpMetadata."+fmt)
+                s = Usd.Stage.CreateNew(f"TestComposedListOpMetadata.{fmt}")
 
                 ref = s.OverridePrim('/Ref')
                 ref.SetMetadata(fieldName, weakListOp)
@@ -729,7 +727,7 @@ class TestUsdMetadata(unittest.TestCase):
         expectedListOp.explicitItems = [18446744073709551615, 3, 2, 1]
         _TestComposition('uint64ListOpTest', 
                          weakListOp, strongListOp, expectedListOp)
-        
+
         # Sdf.StringListOp
         weakListOp = Sdf.StringListOp()
         weakListOp.explicitItems = ["baz"]
@@ -860,46 +858,54 @@ class TestUsdMetadata(unittest.TestCase):
         s = Usd.Stage.Open("assetPaths/root.usda")
         prim = s.GetPrimAtPath("/AssetPathTest")
         attr = prim.GetAttribute("assetPath")
-        
+
         timeSamples = attr.GetMetadata("timeSamples")
         self.assertEqual(os.path.normpath(timeSamples[0].resolvedPath),
                          os.path.abspath("assetPaths/asset.usda"))
         self.assertEqual(os.path.normpath(timeSamples[1].resolvedPath),
                          os.path.abspath("assetPaths/asset.usda"))
-        
+
         self.assertEqual(
             os.path.normpath(attr.GetMetadata("default").resolvedPath), 
             os.path.abspath("assetPaths/asset.usda"))
-        
+
         attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPathArray")
         self.assertEqual(
-            list([os.path.normpath(p.resolvedPath) 
-                  for p in attr.GetMetadata("default")]),
-            [os.path.abspath("assetPaths/asset.usda")])
+            [
+                os.path.normpath(p.resolvedPath)
+                for p in attr.GetMetadata("default")
+            ],
+            [os.path.abspath("assetPaths/asset.usda")],
+        )
 
         metadataDict = prim.GetMetadata("customData")
         self.assertEqual(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
         self.assertEqual(
-            list([os.path.normpath(p.resolvedPath) 
-                  for p in metadataDict["assetPathArray"]]),
-            [os.path.abspath("assetPaths/asset.usda")])
-            
+            [
+                os.path.normpath(p.resolvedPath)
+                for p in metadataDict["assetPathArray"]
+            ],
+            [os.path.abspath("assetPaths/asset.usda")],
+        )
+
         metadataDict = metadataDict["subDict"]
         self.assertEqual(
             os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
         self.assertEqual(
-            list([os.path.normpath(p.resolvedPath) 
-                  for p in metadataDict["assetPathArray"]]),
-            [os.path.abspath("assetPaths/asset.usda")])
+            [
+                os.path.normpath(p.resolvedPath)
+                for p in metadataDict["assetPathArray"]
+            ],
+            [os.path.abspath("assetPaths/asset.usda")],
+        )
 
     def test_TimeSamplesMetadata(self):
         '''Test timeSamples composition, with layer offsets'''
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory(
-                'TestTimeSamplesMetadata.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestTimeSamplesMetadata.{fmt}')
 
             # Create two prims, 'weaker' and 'stronger', 'stronger' references
             # 'weaker'.
@@ -916,7 +922,7 @@ class TestUsdMetadata(unittest.TestCase):
 
             # Set some time samples on the reference.
             weaker_attr = \
-                weaker.CreateAttribute("attr", Sdf.ValueTypeNames.String)
+                    weaker.CreateAttribute("attr", Sdf.ValueTypeNames.String)
             # We write directly to the weaker_attr, as opposed to
             # writing to stronger_attr with an edit target (which
             # would give the same result).

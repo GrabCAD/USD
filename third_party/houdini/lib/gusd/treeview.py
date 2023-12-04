@@ -83,8 +83,7 @@ def ExtractColorsFromStyleSheet():
     # checkboxes, inside text editing fields, etc) extract the
     # background color of the QTextEdit widget.
     grpQTextEdit = '(QTextEdit\n\{[\s\S]*?)'
-    matchBG = re.search(grpQTextEdit + grpBG + grpRgb, qtStyleSheet)
-    if matchBG:
+    if matchBG := re.search(grpQTextEdit + grpBG + grpRgb, qtStyleSheet):
         # Convert it from a string to a QColor.
         baseColor = matchBG.groupdict()['rgb'].strip('rgba()')
         c = [int(channel) for channel in baseColor.split(',')]
@@ -163,9 +162,9 @@ class FilterMenu(ComboBoxStyled):
         styleSheet = 'QComboBox { padding: 2px;'
         channels = [str(c) for c in TreeView.editingBaseColor.getRgb()]
         if len(channels) == 3:
-            styleSheet += ' background: rgb(%s);' % ','.join(channels)
+            styleSheet += f" background: rgb({','.join(channels)});"
         elif len(channels) == 4:
-            styleSheet += ' background: rgba(%s);' % ','.join(channels)
+            styleSheet += f" background: rgba({','.join(channels)});"
         styleSheet += '}'
         self.setStyleSheet(styleSheet)
 
@@ -608,9 +607,7 @@ class TreeView(QFrame):
         # import SOP embedded in a usd import OTL. Only one of the two should
         # be used by the plugin, not both. This check allows the OTL to pass,
         # and causes the embedded SOP to fail.
-        if parm.getReferencedParm().path() != parm.path():
-            return False
-        return True
+        return parm.getReferencedParm().path() == parm.path()
 
     def CheckNodeSelection(self):
         selectedNodes = hou.selectedNodes()
@@ -635,9 +632,7 @@ class TreeView(QFrame):
             return
 
         key = node.sessionId()
-        model = hou.session.UsdImportDict.get(key, None)
-
-        if model:
+        if model := hou.session.UsdImportDict.get(key, None):
             if model != self.view.model():
                 self.SyncViewWithModel(model)
         else:
@@ -716,8 +711,7 @@ class TreeView(QFrame):
         self.activeNodeMenu.RemoveNodeChoice(node)
 
         key = node.sessionId()
-        model = hou.session.UsdImportDict.get(key, None)
-        if model:
+        if model := hou.session.UsdImportDict.get(key, None):
             if model == self.view.model():
                 self.SyncViewWithModel(TreeView.emptyModel)
             model.ClearAll(node)
@@ -816,17 +810,18 @@ class TreeView(QFrame):
                 self.UpdateSizeHints(index.child(row, 0))
 
     def PopupRightClickMenu(self, pos):
-        if self.focusWidget() == self.view:
-            menu = QMenu(self)
-            importAction = menu.addAction("Import")
-            unimportAction = menu.addAction("Unimport")
-            action = menu.exec_(self.view.mapToGlobal(pos))
-            if action is not None:
-                state = Qt.Checked if action == importAction else Qt.Unchecked
-                for index in self.view.selectedIndexes():
-                    # Skip items from every column except the import column.
-                    if index.column() == COL_IMPORT:
-                        self.view.model().setData(index, state, Qt.EditRole)
+        if self.focusWidget() != self.view:
+            return
+        menu = QMenu(self)
+        importAction = menu.addAction("Import")
+        unimportAction = menu.addAction("Unimport")
+        action = menu.exec_(self.view.mapToGlobal(pos))
+        if action is not None:
+            state = Qt.Checked if action == importAction else Qt.Unchecked
+            for index in self.view.selectedIndexes():
+                # Skip items from every column except the import column.
+                if index.column() == COL_IMPORT:
+                    self.view.model().setData(index, state, Qt.EditRole)
 
     def OnSelectionCopied(self):
         indexes = self.view.selectionModel().selectedRows()
@@ -909,7 +904,7 @@ class TreeView(QFrame):
                 # Check if this index itself matches filterString so its parent
                 # can be notified whether to hide or unhide it.
                 match = index.internalPointer().matchesFilter(filterString)
-                return (match == None)
+                return match is None
 
         # Helper method to traverse the tree and unhide all items.
         def Unhide(index):

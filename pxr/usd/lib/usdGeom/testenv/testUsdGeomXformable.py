@@ -427,11 +427,8 @@ class TestUsdGeomXformable(unittest.TestCase):
         # We've got tons of xform ops in x now, let's test GetOrderedXformOps API.
         orderedXformOps = x.GetOrderedXformOps()
         xformOpOrder = Vt.TokenArray(len(orderedXformOps))
-        index = 0
-        for op in orderedXformOps:
+        for index, op in enumerate(orderedXformOps):
             xformOpOrder[index] = op.GetOpName()
-            index += 1
-
         self.assertEqual(xformOpOrder, x.GetXformOpOrderAttr().Get())
 
     def test_AddExistingXformOp(self):

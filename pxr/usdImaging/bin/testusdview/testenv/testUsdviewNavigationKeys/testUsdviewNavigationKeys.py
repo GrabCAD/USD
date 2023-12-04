@@ -77,21 +77,21 @@ def _testBasic(appController):
     # chain, so it takes two "move right" actions to select each level of
     # path hierarchy
     path = Sdf.Path("/World/sets/setModel")
-    for i in xrange(2 * path.pathElementCount):
+    for _ in xrange(2 * path.pathElementCount):
         _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
 
     assert len(selectionDataModel.getPrims()) == 1
     assert selectionDataModel.getFocusPrim().GetPrimPath() == path
 
     # Now roll it all back up
-    for i in xrange(1, 2 * path.pathElementCount):
+    for _ in xrange(1, 2 * path.pathElementCount):
         # Send the event to mainWindow to ensure our app filter reroutes it
         # to the focusWidget.
         _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj)
 
     assert len(selectionDataModel.getPrims()) == 1
     assert selectionDataModel.getFocusPrim().IsPseudoRoot()
-    
+
     # Then test that right/left keys sent to other widgets (including the 
     # MainWindow) will result in transport movement
     startFrame = stage.GetStartTimeCode()
@@ -113,7 +113,7 @@ def _testBasic(appController):
     escSender = EscapeSender(appController._ui.menuView)
     QtCore.QTimer.singleShot(500, escSender, QtCore.SLOT("doIt()"))
     _popupViewMenu(appController)
-    
+
     # Modal dialogs won't receive events sent to the application object,
     # so we must send it to the widget itself. Which means we can't use any
     # of usdview's modals, since we only use static Qt methods that don't

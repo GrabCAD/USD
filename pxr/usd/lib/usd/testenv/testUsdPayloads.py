@@ -25,7 +25,7 @@
 import os, sys, unittest
 from pxr import Gf, Tf, Sdf, Pcp, Usd
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class PayloadedScene(object):
     #
@@ -49,30 +49,30 @@ class PayloadedScene(object):
         #                    /Corge/Waldo/Fred
 
         # Create payload1.fmt
-        self.payload1 = Usd.Stage.CreateInMemory("payload1."+fmt)
+        self.payload1 = Usd.Stage.CreateInMemory(f"payload1.{fmt}")
         p = self.payload1.DefinePrim("/Sad/Panda", "Scope")
 
         # Create payload3.fmt
-        self.payload3 = Usd.Stage.CreateInMemory("payload3."+fmt)
+        self.payload3 = Usd.Stage.CreateInMemory(f"payload3.{fmt}")
         p = self.payload3.DefinePrim("/Garply/Qux", "Scope")
 
         # Create payload2.fmt
         # Intentionally using the metadata API.
-        self.payload2 = Usd.Stage.CreateInMemory("payload2."+fmt)
+        self.payload2 = Usd.Stage.CreateInMemory(f"payload2.{fmt}")
         p = self.payload2.DefinePrim("/Baz/Garply", "Scope")
         p.SetMetadata("payload", 
                       Sdf.Payload(self.payload3.GetRootLayer().identifier,
                                   "/Garply"))
 
         # Create payload4.fmt
-        self.payload4 = Usd.Stage.CreateInMemory("payload4."+fmt)
+        self.payload4 = Usd.Stage.CreateInMemory(f"payload4.{fmt}")
         p = self.payload4.DefinePrim("/Corge/Waldo/Fred", "Scope")
 
         #
         # Create the scene that references payload1 and payload2
         #
         # Intentionally using the prim-payload API.
-        self.stage = Usd.Stage.CreateInMemory("scene."+fmt)
+        self.stage = Usd.Stage.CreateInMemory(f"scene.{fmt}")
         p = self.stage.DefinePrim("/Sad", "Scope")
         p.SetPayload(Sdf.Payload(self.payload1.GetRootLayer().identifier, "/Sad"))
 
@@ -163,10 +163,17 @@ class TestUsdPayloads(unittest.TestCase):
         for fmt in allFormats:
             p = InstancedAndPayloadedScene(fmt)
 
-            self.assertEqual(set(p.stage.FindLoadable()),
-                             set([Sdf.Path("/Sad"), Sdf.Path("/Sad_1"), 
-                                  Sdf.Path("/Foo/Baz"), Sdf.Path("/Foo/Baz_1"),
-                                  Sdf.Path("/Bar"), Sdf.Path("/Bar_1")]))
+            self.assertEqual(
+                set(p.stage.FindLoadable()),
+                {
+                    Sdf.Path("/Sad"),
+                    Sdf.Path("/Sad_1"),
+                    Sdf.Path("/Foo/Baz"),
+                    Sdf.Path("/Foo/Baz_1"),
+                    Sdf.Path("/Bar"),
+                    Sdf.Path("/Bar_1"),
+                },
+            )
 
             sad = p.stage.GetPrimAtPath("/Sad")
             sad_1 = p.stage.GetPrimAtPath("/Sad_1")

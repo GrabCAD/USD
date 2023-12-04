@@ -57,17 +57,20 @@ def _compareFiles(installedFiles, generatedFiles, configuration):
 
     diffs = {}
     for i in xrange(0, len(installedFiles)):
-        with open(installedFiles[i], 'r') as installedFile,\
-             open(generatedFiles[i], 'r') as generatedFile:
+        with (open(installedFiles[i], 'r') as installedFile, open(generatedFiles[i], 'r') as generatedFile):
             
             installedContent = installedFile.read()
             generatedContent = generatedFile.read()
 
             if installedContent != generatedContent:
-                diff = '\n'.join(unified_diff(installedContent.split('\n'),
-                                              generatedContent.split('\n'),
-                                              'Source ' + installedFile.name,
-                                              'Generated ' + generatedFile.name))
+                diff = '\n'.join(
+                    unified_diff(
+                        installedContent.split('\n'),
+                        generatedContent.split('\n'),
+                        f'Source {installedFile.name}',
+                        f'Generated {generatedFile.name}',
+                    )
+                )
                 diffs[basename(installedFile.name)] = diff
 
             if diffs and failOnDiff:
@@ -82,14 +85,14 @@ def _copyGeneratedFiles(installedFiles, generatedFiles, diffs):
                                                       generatedFiles, 
                                                       installedFiles):
         if baseName in diffs:
-            print('Changed: ' + baseName)
+            print(f'Changed: {baseName}')
             print(diffs[baseName])
             if not access(installedFile, W_OK):
-                print('Cannot author ' + installedFile + ', (no write access).')
+                print(f'Cannot author {installedFile}, (no write access).')
             else:
-                copyfile(generatedFile, installedFile) 
+                copyfile(generatedFile, installedFile)
         else:
-            print('Unchanged: ' + baseName)
+            print(f'Unchanged: {baseName}')
 
 # -----------------------------------------------------------------------------
 # Code generation functions.
@@ -297,11 +300,16 @@ def _validateSourceDirectory(configuration):
     bases = configuration[BASES]
     srcDir = configuration[SRC_DIR]
 
-    allFiles = ([join(srcDir, base + '.yy') for base in bases] 
-                + [join(srcDir, base + '.ll') for base in bases]
-                + [join(srcDir, base + '.tab.cpp') for base in bases]
-                + [join(srcDir, base + '.tab.h') for base in bases]
-                + [join(srcDir, base + '.lex.cpp') for base in bases])
+    allFiles = (
+        (
+            (
+                [join(srcDir, f'{base}.yy') for base in bases]
+                + [join(srcDir, f'{base}.ll') for base in bases]
+            )
+            + [join(srcDir, f'{base}.tab.cpp') for base in bases]
+        )
+        + [join(srcDir, f'{base}.tab.h') for base in bases]
+    ) + [join(srcDir, f'{base}.lex.cpp') for base in bases]
 
     if not all(isfile(f) for f in allFiles):
         exit('*** Invalid source directory. This directory must '
@@ -326,15 +334,23 @@ def _determineBuildSystem(configuration):
         exit('*** Unable to determine build system.')
 
 def _getSconsBuildEnvSetting(environmentVariable, configuration):
-    command = [find_executable('scons'), '-u', 
-               '-Qq', '--echo=' + environmentVariable]
+    command = [
+        find_executable('scons'),
+        '-u',
+        '-Qq',
+        f'--echo={environmentVariable}',
+    ]
     line, _ = Popen(command, stdout=PIPE).communicate()
     _, envSettingValue = line.strip().split(' = ')
 
     if not envSettingValue:
-        exit('*** Unable to determine ' + environmentVariable + 'from '
-             'SCons build system. Try supplying it through the command line '
-             'options.')
+        exit(
+            (
+                f'*** Unable to determine {environmentVariable}' + 'from '
+                'SCons build system. Try supplying it through the command line '
+                'options.'
+            )
+        )
 
     return envSettingValue
 
@@ -359,9 +375,13 @@ def _getCMakeBuildEnvSetting(environmentVariable, configuration):
     _, envSettingValue = line.strip().split('=')
 
     if not envSettingValue:
-        exit('*** Unable to determine ' + environmentVariable + 'from '
-             'CMake build system. Try supplying it through the command line '
-             'options.')
+        exit(
+            (
+                f'*** Unable to determine {environmentVariable}' + 'from '
+                'CMake build system. Try supplying it through the command line '
+                'options.'
+            )
+        )
 
     return envSettingValue
 
@@ -396,16 +416,16 @@ if __name__ == '__main__':
 
     _printSection('Canonicalizing generated files')
     generatedFiles = _canonicalizeFiles(sourceFiles, generatedFiles)
-    
+
     diffSectionMsg = 'Checking for diffs'
     if configuration[VALIDATE]:
-        diffSectionMsg = diffSectionMsg + '(validation on)'
+        diffSectionMsg += '(validation on)'
 
     _printSection(diffSectionMsg)
     installedFiles = [join(configuration[SRC_DIR], basename(f)) 
                       for f in generatedFiles]
 
     diffs = _compareFiles(installedFiles, generatedFiles, configuration)
-    _copyGeneratedFiles(installedFiles, generatedFiles, diffs) 
+    _copyGeneratedFiles(installedFiles, generatedFiles, diffs)
     # If validation passed, clean up the generated files
     rmtree(configuration[DEST_DIR])

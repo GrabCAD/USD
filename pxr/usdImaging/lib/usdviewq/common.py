@@ -69,18 +69,18 @@ class Complexities(ConstantGroup):
     @classmethod
     def fromId(cls, compId):
         """Get a complexity from its identifier."""
-        matches = [comp for comp in Complexities if comp.id == compId]
-        if len(matches) == 0:
-            raise ValueError("No complexity with id '{}'".format(compId))
-        return matches[0]
+        if matches := [comp for comp in Complexities if comp.id == compId]:
+            return matches[0]
+        else:
+            raise ValueError(f"No complexity with id '{compId}'")
 
     @classmethod
     def fromName(cls, name):
         """Get a complexity from its display name."""
-        matches = [comp for comp in Complexities if comp.name == name]
-        if len(matches) == 0:
-            raise ValueError("No complexity with name '{}'".format(name))
-        return matches[0]
+        if matches := [comp for comp in Complexities if comp.name == name]:
+            return matches[0]
+        else:
+            raise ValueError(f"No complexity with name '{name}'")
 
     @classmethod
     def next(cls, comp):
@@ -88,7 +88,7 @@ class Complexities(ConstantGroup):
         level, return it.
         """
         if comp not in Complexities:
-            raise ValueError("Invalid complexity: {}".format(comp))
+            raise ValueError(f"Invalid complexity: {comp}")
         nextIndex = min(
             len(Complexities._ordered) - 1,
             Complexities._ordered.index(comp) + 1)
@@ -100,7 +100,7 @@ class Complexities(ConstantGroup):
         level, return it.
         """
         if comp not in Complexities:
-            raise ValueError("Invalid complexity: {}".format(comp))
+            raise ValueError(f"Invalid complexity: {comp}")
         prevIndex = max(0, Complexities._ordered.index(comp) - 1)
         return Complexities._ordered[prevIndex]
 
@@ -239,7 +239,7 @@ def PropTreeWidgetTypeIsRel(tw):
     return role in (PropertyViewDataRoles.RELATIONSHIP, PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS)
 
 def _UpdateLabelText(text, substring, mode):
-    return text.replace(substring, '<'+mode+'>'+substring+'</'+mode+'>')
+    return text.replace(substring, f'<{mode}>{substring}</{mode}>')
 
 def ItalicizeLabelText(text, substring):
     return _UpdateLabelText(text, substring, 'i')
@@ -275,7 +275,7 @@ def GetShortString(prop, frame):
             elif numTimeSamples == 1:
                 return "1 time sample"
             else:
-                return str(numTimeSamples) + " time samples"
+                return f"{str(numTimeSamples)} time samples"
     elif isinstance(prop, Sdf.RelationshipSpec):
         return str(prop.targetPathList)
 
@@ -287,10 +287,11 @@ def GetShortString(prop, frame):
             from itertools import chain
             elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])
             return '[' + ', '.join(map(str, elems)) + ']'
+
         if val is not None and len(val):
             result = "%s[%d]: %s" % (scalarType, len(val), arrayToStr(val))
         else:
-            result = "%s[]" % scalarType
+            result = f"{scalarType}[]"
     else:
         result = str(val)
 
@@ -349,10 +350,7 @@ class SubLayerInfo(object):
         o = self.offset.offset
         s = self.offset.scale
         if o == 0:
-            if s == 1:
-                return ""
-            else:
-                return str.format("(scale = {})", s)
+            return "" if s == 1 else str.format("(scale = {})", s)
         elif s == 1:
             return str.format("(offset = {})", o)
         else:
@@ -495,13 +493,14 @@ def GetPrimLoadability(prim):
     is a debatable definition, but seems useful for usdview's purposes."""
     if not (prim.IsActive() and (prim.IsGroup() or prim.HasPayload())):
         return (False, True)
-    # XXX Note that we are potentially traversing the entire stage here.
-    # If this becomes a performance issue, we can cast this query into C++,
-    # cache results, etc.
-    for p in Usd.PrimRange(prim, Usd.PrimIsActive):
-        if not p.IsLoaded():
-            return (True, False)
-    return (True, True)
+    return next(
+        (
+            (True, False)
+            for p in Usd.PrimRange(prim, Usd.PrimIsActive)
+            if not p.IsLoaded()
+        ),
+        (True, True),
+    )
 
 def GetPrimsLoadability(prims):
     """Follow the logic of GetPrimLoadability for each prim, combining
@@ -598,9 +597,7 @@ def GetInstanceIdForIndex(prim, instanceIndex, time):
     if not prim or instanceIndex < 0:
         return None
     ids = UsdGeom.PointInstancer(prim).GetIdsAttr().Get(time)
-    if not ids or instanceIndex >= len(ids):
-        return None
-    return ids[instanceIndex]
+    return None if not ids or instanceIndex >= len(ids) else ids[instanceIndex]
 
 def GetInstanceIndicesForIds(prim, instanceIds, time):
     '''Attempt to find the instance indices of a list of authored instance IDs
@@ -608,8 +605,7 @@ def GetInstanceIndicesForIds(prim, instanceIds, time):
     not have authored IDs, returns None. If any ID from 'instanceIds' does not
     exist at the given time, its index is not added to the list (because it does
     not have an index).'''
-    ids = UsdGeom.PointInstancer(prim).GetIdsAttr().Get(time)
-    if ids:
+    if ids := UsdGeom.PointInstancer(prim).GetIdsAttr().Get(time):
         return [instanceIndex for instanceIndex, instanceId in enumerate(ids)
             if instanceId in instanceIds]
     else:
@@ -630,10 +626,12 @@ class PrimNotFoundException(Exception):
     """Raised when a prim does not exist at a valid path."""
     def __init__(self, path):
         super(PrimNotFoundException, self).__init__(
-            "Prim not found at path in stage: %s" % str(path))
+            f"Prim not found at path in stage: {str(path)}"
+        )
 
 class PropertyNotFoundException(Exception):
     """Raised when a property does not exist at a valid path."""
     def __init__(self, path):
         super(PropertyNotFoundException, self).__init__(
-            "Property not found at path in stage: %s" % str(path))
+            f"Property not found at path in stage: {str(path)}"
+        )
