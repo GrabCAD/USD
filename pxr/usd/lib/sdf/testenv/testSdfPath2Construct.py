@@ -257,7 +257,9 @@ class TestSdfPath2Construct(unittest.TestCase):
 
     def test_BadPaths(self):
         for str in badPathStrings:
-            self.assertEqual(Sdf.Path(str), Sdf.Path.emptyPath, "Failed on path str %s"%str)
+            self.assertEqual(
+                Sdf.Path(str), Sdf.Path.emptyPath, f"Failed on path str {str}"
+            )
 
 if __name__ == "__main__":
     unittest.main()

@@ -51,23 +51,19 @@ def TraceFunction(obj, isFree=True):
     global collector."""
     
     collector = Collector()
-    
+
     def decorate(func):
         import inspect
 
         if inspect.ismethod(func):
             callableTypeLabel = 'method'
-            classLabel = func.im_class.__name__+'.'
+            classLabel = f'{func.im_class.__name__}.'
         else:
             callableTypeLabel = 'func'
             classLabel = ''
 
         module = inspect.getmodule(func)
-        if module is not None:
-            moduleLabel = module.__name__+'.'
-        else:
-            moduleLabel = ''
-
+        moduleLabel = f'{module.__name__}.' if module is not None else ''
         label = 'Python {0}: {1}{2}{3}'.format(
             callableTypeLabel,
             moduleLabel,
@@ -93,9 +89,7 @@ def TraceMethod(obj):
 # Remove any private stuff, like test classes, if we are not being
 # imported from a test.
 
-try:
+with contextlib.suppress(Exception):
     from . import __DOC
     __DOC.Execute(locals())
     del __DOC
-except Exception:
-    pass

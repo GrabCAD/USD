@@ -39,45 +39,45 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
     def _SetupStage(self):
         usdStage = Usd.Stage.CreateInMemory()
         self.assertTrue(usdStage)
-    
+
         nodeGraph = UsdShade.NodeGraph.Define(usdStage, NODEGRAPH_PATH)
         self.assertTrue(nodeGraph)
-    
+
         for i in range(len(SHADERS)):
             outputName = OUTPUTS[i]
             shaderName = SHADERS[i]
-    
+
             paramName = PARAMS[i]
             inputName = INPUTS[i]
-    
-            shaderPath = '%s/%s' % (NODEGRAPH_PATH, shaderName)
+
+            shaderPath = f'{NODEGRAPH_PATH}/{shaderName}'
             shader = UsdShade.Shader.Define(usdStage, shaderPath)
             self.assertTrue(shader)
-    
+
             shaderInput = shader.CreateInput(paramName, 
                                              Sdf.ValueTypeNames.Float)
             self.assertTrue(shaderInput)
-    
+
             nodeGraphInput = nodeGraph.CreateInput(inputName, 
                                                    Sdf.ValueTypeNames.Float)
             self.assertTrue(nodeGraphInput)
-    
+
             shaderOutput = shader.CreateOutput(outputName, 
                                                Sdf.ValueTypeNames.Int)
             self.assertTrue(shaderOutput)
-    
+
             nodeGraphOutput = nodeGraph.CreateOutput(outputName, 
                                                      Sdf.ValueTypeNames.Int)
             self.assertTrue(nodeGraphOutput)
-    
+
             self.assertTrue(nodeGraphOutput.ConnectToSource(shaderOutput))
-    
+
             self.assertTrue(shaderInput.ConnectToSource(nodeGraphInput))
 
         nestedNodeGraph = UsdShade.NodeGraph.Define(usdStage, 
             NESTED_NODEGRAPH_PATH)
         self.assertTrue(nestedNodeGraph)
-    
+
         nestedNodeGraphShader = UsdShade.Shader.Define(usdStage, 
             NESTED_NODEGRAPH_SHADER_PATH)
         self.assertTrue(nestedNodeGraphShader)
@@ -88,11 +88,11 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
 
         nestedNodeGraphInput.ConnectToSource(
             NODEGRAPH_PATH.AppendProperty("inputs:InputTwo"))
-    
+
         nestedNodeGraphOutput = nestedNodeGraph.CreateOutput("NestedOutput", 
             Sdf.ValueTypeNames.Int)
         self.assertTrue(nestedNodeGraphOutput)
-    
+
         nestedNodeGraphShaderOutput = nestedNodeGraphShader.CreateOutput("NestedShaderOutput", 
             Sdf.ValueTypeNames.Int)
         self.assertTrue(nestedNodeGraphShaderOutput)

@@ -176,9 +176,7 @@ def _splitCmd(cmd):
 # want the exit code 134 as that is what the script would return when run
 # from the shell. This is well defined to be 128 + (signal number).
 def _convertRetCode(retcode):
-    if retcode < 0:
-        return 128 + abs(retcode)
-    return retcode
+    return 128 + abs(retcode) if retcode < 0 else retcode
 
 def _getRedirects(out_redir, err_redir):
     return (open(out_redir, 'w') if out_redir else None,

@@ -70,11 +70,11 @@ def _selectPrimsAndProps(dataModel, paths):
         prims.append(prim)
 
         if path.IsPropertyPath():
-            prop = prim.GetProperty(path.name)
-            if not prop:
-                raise PropertyNotFoundException(path)
-            props.append(prop)
+            if prop := prim.GetProperty(path.name):
+                props.append(prop)
 
+            else:
+                raise PropertyNotFoundException(path)
     with dataModel.selection.batchPrimChanges:
         dataModel.selection.clearPrims()
         for prim in prims:
@@ -208,16 +208,13 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
 #
 class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
     def ShouldDisplay(self):
-        return (self._role == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS
-                or self._role == PropertyViewDataRoles.ATTRIBUTE_WITH_CONNNECTIONS)
+        return self._role in [
+            PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS,
+            PropertyViewDataRoles.ATTRIBUTE_WITH_CONNNECTIONS,
+        ]
 
     def IsEnabled(self):
-        if not self._item:
-            return False
-
-        # Disable the menu if there are no targets
-        # for this rel/attribute connection
-        return self._item.childCount() != 0
+        return False if not self._item else self._item.childCount() != 0
 
     def GetText(self):
         return "Select Target Path(s)"

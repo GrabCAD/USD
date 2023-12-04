@@ -34,7 +34,7 @@ class TestUsdUIBackdrop(unittest.TestCase):
         rootPrim = stage.DefinePrim("/ModelShading")
         materialsPath = rootPrim.GetPath().AppendChild('Materials')
         parentMaterialPath = materialsPath.AppendChild('ParentMaterial')
-       
+
         # Test Backdrop
         backdrop = UsdUI.Backdrop.Define(
             stage, parentMaterialPath.AppendChild("Backdrop_1"))
@@ -44,8 +44,9 @@ class TestUsdUIBackdrop(unittest.TestCase):
         # Test Description
         descAttr = backdrop.GetDescriptionAttr()
         assert descAttr
-        assert descAttr.GetTypeName() == 'token', \
-            "Type of description attribute should be 'token', not %s" % descAttr.GetTypeName()
+        assert (
+            descAttr.GetTypeName() == 'token'
+        ), f"Type of description attribute should be 'token', not {descAttr.GetTypeName()}"
         descAttr.Set("Backdrop test description")
 
         stage.GetRootLayer().Save()

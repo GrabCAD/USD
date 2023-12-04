@@ -121,11 +121,11 @@ def _checkPath(path, ident, perm):
     elif not os.access(path, perm):
         permString = '-permission'
         if perm == os.W_OK:
-            permString = 'write'+permString
+            permString = f'write{permString}'
         elif perm == os.R_OK:
-            permString = 'read'+permString
+            permString = f'read{permString}'
         elif perm == os.X_OK:
-            permString = 'execute'+permString
+            permString = f'execute{permString}'
         sys.exit('Error: insufficient permission for path %s, '
                  '%s required.' % (path, permString))
 

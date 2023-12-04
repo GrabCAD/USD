@@ -37,8 +37,7 @@ def PopulateAllSkelRoots(stage, cache):
 #! [IterSkels]
 def IterSkels(skelRootPrim, skelCache):
     for descendant in Usd.PrimRange(skelRootPrim):
-        query = skelCache.GetSkelQuery(descendant)
-        if query:
+        if query := skelCache.GetSkelQuery(descendant):
             yield (descendant,query)
 #! [IterSkels]
 

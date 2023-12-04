@@ -59,8 +59,7 @@ class TestUsdGeomComputeAtTimeBase(object):
                     self.assertTrue(Gf.IsClose(row1, row2, MATRIX_TOLERANCE))
             except AssertionError:
                 # Print a more descriptive message.
-                raise AssertionError(
-                    "Matrices not equal:\n{}\n{}".format(matrix1, matrix2))
+                raise AssertionError(f"Matrices not equal:\n{matrix1}\n{matrix2}")
 
     def assertAllMatrixListsEqual(self, lists1, lists2):
         for list1, list2 in zip(lists1, lists2):
@@ -77,8 +76,7 @@ class TestUsdGeomComputeAtTimeBase(object):
                         Gf.IsClose(ext1[i][d], ext2[i][d], EXTENT_TOLERANCE))
         except AssertionError:
             # Print a more descriptive message.
-            raise AssertionError(
-                "Extents not equal:\n{}\n{}".format(ext1, ext2))
+            raise AssertionError(f"Extents not equal:\n{ext1}\n{ext2}")
 
 
     def computeInstanceTransforms(self, pi, tr, baseTime,

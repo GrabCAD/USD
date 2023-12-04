@@ -32,7 +32,7 @@ class TestUsdEditTarget(unittest.TestCase):
         layer = Sdf.Layer.FindOrOpen(layerFile)
         assert layer, 'failed to find "test.usda'
         stage = Usd.Stage.Open(layerFile)
-        assert stage, 'failed to create stage for %s' % layerFile
+        assert stage, f'failed to create stage for {layerFile}'
 
         prim = stage.GetPrimAtPath('/Sarah')
         assert prim, 'failed to find prim /Sarah'
@@ -65,8 +65,10 @@ class TestUsdEditTarget(unittest.TestCase):
         def CheckPath(target, scenePath, specPath):
             result = target.MapToSpecPath(scenePath)
             if result != specPath:
-                raise AssertionError, '%s -> %s, expected %s -> %s' % (
-                    scenePath, result, scenePath, specPath)
+                raise (
+                    AssertionError,
+                    f'{scenePath} -> {result}, expected {scenePath} -> {specPath}',
+                )
 
         CheckPath(Sarah, '/Sarah', '/Sarah')
         CheckPath(Sarah, '/Sarah/child', '/Sarah/child')
@@ -111,56 +113,29 @@ class TestUsdEditTarget(unittest.TestCase):
         ########################################################################
         return
         ########################################################################
-        # XXX !  The following portion of this test is disabled since Usd has no API
-        # for composing up to some point.  This should be reenabled when that's
-        # available.
-
-        # Test value resolution across reference, inherit, and variant.
-        def CheckValue(obj, key, target, expected):
-            result = obj.ComposeInfo(
-                key, defVal=None, editTarget=target,
-                excerptType=Csd.ExcerptTypeAll, composeInfo=None)
-            if not Gf.IsClose(result, expected, 1e-4):
-                raise AssertionError, ("Got '%s' resolving '%s' on '%s', expected "
-                                       "'%s'" % (result, key, obj.path, expected))
-
-        displayColor = scene.GetObjectAtPath('/Sarah.displayColor')
-
-        CheckValue(displayColor, 'default', Sarah,
-                   Gf.Vec3d(0.1, 0.2, 0.3))
-        CheckValue(displayColor, 'default', class_Sarah,
-                   Gf.Vec3d(1, 1, 1))
-        CheckValue(displayColor, 'default', Sarah_displayColor_red,
-                   Gf.Vec3d(1, 0, 0))
-        CheckValue(displayColor, 'default', Sarah_Defaults,
-                   Gf.Vec3d(0, 0, 1))
-        CheckValue(displayColor, 'default', Sarah_Base,
-                   Gf.Vec3d(0.8, 0, 0))
-        CheckValue(displayColor, 'default', Sarah_Base_displayColor_red,
-                   Gf.Vec3d(0.8, 0, 0))
-        ########################################################################
 
 
     def test_StageEditTargetAPI(self):
         def OpenLayer(name):
-            fullName = '%s.usda' % name
+            fullName = f'{name}.usda'
             layer = Sdf.Layer.FindOrOpen(fullName)
-            assert layer, 'failed to open layer @%s@' % fullName
+            assert layer, f'failed to open layer @{fullName}@'
             return layer
 
         # Open stage.
         layer = OpenLayer('testAPI_root')
         stage = Usd.Stage.Open(layer.identifier)
-        assert stage, 'failed to create stage for @%s@' % layer.identifier
+        assert stage, f'failed to create stage for @{layer.identifier}@'
 
         # Check GetLayerStack behavior.
         assert stage.GetLayerStack()[0] == stage.GetSessionLayer()
 
         # Get LayerStack without session layer.
         rootLayer, subLayer1, subLayer2 = \
-            stage.GetLayerStack(includeSessionLayers=False)
-        assert subLayer1 and subLayer2, ('expected @%s@ to have 2 sublayers' %
-                                         layer.identifier)
+                stage.GetLayerStack(includeSessionLayers=False)
+        assert (
+            subLayer1 and subLayer2
+        ), f'expected @{layer.identifier}@ to have 2 sublayers'
         assert rootLayer == stage.GetRootLayer()
 
         # Get Sarah prim.
@@ -185,7 +160,7 @@ class TestUsdEditTarget(unittest.TestCase):
 
         stage.SetEditTarget(stage.GetRootLayer())
         assert stage.GetEditTarget() == stage.GetRootLayer(), \
-            'failed to set EditTarget'
+                'failed to set EditTarget'
 
         # Try authoring to sublayers using context object.
         with Usd.EditContext(stage, subLayer2):
@@ -197,7 +172,7 @@ class TestUsdEditTarget(unittest.TestCase):
 
         # Target should be back to root layer.
         assert stage.GetEditTarget() == stage.GetRootLayer(), \
-            'EditContext failed to restore EditTarget'
+                'EditContext failed to restore EditTarget'
 
         # Set to subLayer1.
         stage.SetEditTarget(subLayer1)
@@ -216,7 +191,7 @@ class TestUsdEditTarget(unittest.TestCase):
 
         # Target should be back to subLayer1.
         assert stage.GetEditTarget() == subLayer1, \
-            'EditContext failed to restore EditTarget'
+                'EditContext failed to restore EditTarget'
 
         # Verify an error is reported for setting EditTarget as a local layer
         # that's not in the local LayerStack.
@@ -230,7 +205,7 @@ class TestUsdEditTarget(unittest.TestCase):
         usdFile = 'testSessionSublayerEditTarget.usda'
 
         stage = Usd.Stage.Open(usdFile)
-        assert stage, 'failed to create stage for @%s@' % usdFile
+        assert stage, f'failed to create stage for @{usdFile}@'
 
         sessionLayer = stage.GetSessionLayer()
         assert len(sessionLayer.subLayerPaths) == 0

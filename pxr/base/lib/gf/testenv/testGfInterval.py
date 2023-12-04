@@ -31,12 +31,11 @@ from pxr import Gf
 class TestGfInterval(unittest.TestCase):
 
     def runTest(self):
-        testIntervals = []
         inf = float("inf")
 
         # Empty interval
         i0 = Gf.Interval()
-        testIntervals.append(i0)
+        testIntervals = [i0]
         self.assertTrue(i0.isEmpty)
 
         # Non-empty: [1,1]
@@ -264,7 +263,7 @@ class TestGfInterval(unittest.TestCase):
 
         # Test representations
         self.assertTrue(i1.min == eval(repr(i1)).min and \
-            i1.max == eval(repr(i1)).max, ("repr"))
+                i1.max == eval(repr(i1)).max, ("repr"))
 
         self.assertTrue(len(str(Gf.Interval())), ("str"))
 

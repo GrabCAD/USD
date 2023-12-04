@@ -25,10 +25,10 @@
 import sys, unittest
 from pxr import Sdf, Tf, Usd
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 def _CreateStage(fmt):
-    s = Usd.Stage.CreateInMemory('_CreateStage.'+fmt)
+    s = Usd.Stage.CreateInMemory(f'_CreateStage.{fmt}')
     s.GetRootLayer().ImportFromString('''#usda 1.0
         def Scope "Foo"
         {
@@ -137,46 +137,92 @@ class TestUsdRelationships(unittest.TestCase):
             recursive = stage.GetPrimAtPath("/Recursive")
             self.assertEqual(
                 set(recursive.FindAllRelationshipTargetPaths()),
-                set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
-                     Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
-                     Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/B'),
-                     Sdf.Path('/Recursive/D/C'), Sdf.Path('/Recursive/D/D')]))
+                {
+                    Sdf.Path('/Recursive/A'),
+                    Sdf.Path('/Recursive/B'),
+                    Sdf.Path('/Recursive/C'),
+                    Sdf.Path('/Recursive/D'),
+                    Sdf.Path('/Recursive/D/A'),
+                    Sdf.Path('/Recursive/D/B'),
+                    Sdf.Path('/Recursive/D/C'),
+                    Sdf.Path('/Recursive/D/D'),
+                },
+            )
 
             self.assertEqual(
-                set(recursive.FindAllRelationshipTargetPaths(
-                    predicate = lambda rel: rel.GetPrim().GetName() in ('B', 'D'))),
-                set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/C'),
-                     Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/C')]))
+                set(
+                    recursive.FindAllRelationshipTargetPaths(
+                        predicate=lambda rel: rel.GetPrim().GetName() in ('B', 'D')
+                    )
+                ),
+                {
+                    Sdf.Path('/Recursive/A'),
+                    Sdf.Path('/Recursive/C'),
+                    Sdf.Path('/Recursive/D/A'),
+                    Sdf.Path('/Recursive/D/C'),
+                },
+            )
 
             self.assertEqual(
-                set(recursive.FindAllRelationshipTargetPaths(
-                    predicate = lambda rel: rel.GetPrim().GetName() in ('A', 'C'))),
-                set([Sdf.Path('/Recursive/B'), Sdf.Path('/Recursive/D'),
-                     Sdf.Path('/Recursive/D/B'), Sdf.Path('/Recursive/D/D')]))
-                
+                set(
+                    recursive.FindAllRelationshipTargetPaths(
+                        predicate=lambda rel: rel.GetPrim().GetName() in ('A', 'C')
+                    )
+                ),
+                {
+                    Sdf.Path('/Recursive/B'),
+                    Sdf.Path('/Recursive/D'),
+                    Sdf.Path('/Recursive/D/B'),
+                    Sdf.Path('/Recursive/D/D'),
+                },
+            )
+
             recursiveA = stage.GetPrimAtPath("/Recursive/A")
-            self.assertEqual(set(recursiveA.FindAllRelationshipTargetPaths()),
-                        set([Sdf.Path('/Recursive/B')]))
-            
-            self.assertEqual(set(
-                recursiveA.FindAllRelationshipTargetPaths(recurseOnTargets=True)),
-                set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
-                     Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
-                     Sdf.Path('/Recursive/D/A'), Sdf.Path('/Recursive/D/B'),
-                     Sdf.Path('/Recursive/D/C'), Sdf.Path('/Recursive/D/D')]))
+            self.assertEqual(
+                set(recursiveA.FindAllRelationshipTargetPaths()),
+                {Sdf.Path('/Recursive/B')},
+            )
 
-            self.assertEqual(set(
-                recursiveA.FindAllRelationshipTargetPaths(
-                    recurseOnTargets=True,
-                    predicate=lambda rel: rel.GetPrim().GetParent().GetName() ==
-                    'Recursive' or rel.GetPrim().GetName() in ('A', 'C'))),
-                set([Sdf.Path('/Recursive/A'), Sdf.Path('/Recursive/B'),
-                     Sdf.Path('/Recursive/C'), Sdf.Path('/Recursive/D'),
-                     Sdf.Path('/Recursive/D/B'), Sdf.Path('/Recursive/D/D')]))
+            self.assertEqual(
+                set(
+                    recursiveA.FindAllRelationshipTargetPaths(
+                        recurseOnTargets=True
+                    )
+                ),
+                {
+                    Sdf.Path('/Recursive/A'),
+                    Sdf.Path('/Recursive/B'),
+                    Sdf.Path('/Recursive/C'),
+                    Sdf.Path('/Recursive/D'),
+                    Sdf.Path('/Recursive/D/A'),
+                    Sdf.Path('/Recursive/D/B'),
+                    Sdf.Path('/Recursive/D/C'),
+                    Sdf.Path('/Recursive/D/D'),
+                },
+            )
+
+            self.assertEqual(
+                set(
+                    recursiveA.FindAllRelationshipTargetPaths(
+                        recurseOnTargets=True,
+                        predicate=lambda rel: rel.GetPrim().GetParent().GetName()
+                        == 'Recursive'
+                        or rel.GetPrim().GetName() in ('A', 'C'),
+                    )
+                ),
+                {
+                    Sdf.Path('/Recursive/A'),
+                    Sdf.Path('/Recursive/B'),
+                    Sdf.Path('/Recursive/C'),
+                    Sdf.Path('/Recursive/D'),
+                    Sdf.Path('/Recursive/D/B'),
+                    Sdf.Path('/Recursive/D/D'),
+                },
+            )
 
     def test_TargetsInInstances(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestTargetsInInstances.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestTargetsInInstances.{fmt}')
             s.GetRootLayer().ImportFromString('''#usda 1.0
             def Scope "Ref"
             {
@@ -277,8 +323,7 @@ class TestUsdRelationships(unittest.TestCase):
 
     def test_TargetsToObjectsInInstances(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory(
-                'TestTargetsToObjectsInInstances.'+fmt)
+            stage = Usd.Stage.CreateInMemory(f'TestTargetsToObjectsInInstances.{fmt}')
             stage.GetRootLayer().ImportFromString('''#usda 1.0
             def "Instance"
             {
@@ -526,7 +571,7 @@ class TestUsdRelationships(unittest.TestCase):
 
     def test_AuthoringTargets(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("testAuthoringTargets." + fmt)
+            stage = Usd.Stage.CreateInMemory(f"testAuthoringTargets.{fmt}")
 
             prim = stage.DefinePrim("/Test")
             rel = prim.CreateRelationship("rel")

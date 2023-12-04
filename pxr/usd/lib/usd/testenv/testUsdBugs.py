@@ -96,31 +96,46 @@ class TestUsdBugs(unittest.TestCase):
         s = Usd.Stage.Open(l1, Usd.Stage.LoadAll)
 
         self.assertTrue(
-            all([x.IsLoaded() for x in [
-                s.GetPrimAtPath('/p1'),
-                s.GetPrimAtPath('/p1/y'),
-                s.GetPrimAtPath('/p2'),
-                s.GetPrimAtPath('/p2/y')]]))
+            all(
+                x.IsLoaded()
+                for x in [
+                    s.GetPrimAtPath('/p1'),
+                    s.GetPrimAtPath('/p1/y'),
+                    s.GetPrimAtPath('/p2'),
+                    s.GetPrimAtPath('/p2/y'),
+                ]
+            )
+        )
 
         # Now uninstance, and assert that load state is preserved.
         s.GetPrimAtPath('/p2').SetInstanceable(False)
 
         self.assertTrue(
-            all([x.IsLoaded() for x in [
-                s.GetPrimAtPath('/p1'),
-                s.GetPrimAtPath('/p1/y'),
-                s.GetPrimAtPath('/p2'),
-                s.GetPrimAtPath('/p2/y')]]))
+            all(
+                x.IsLoaded()
+                for x in [
+                    s.GetPrimAtPath('/p1'),
+                    s.GetPrimAtPath('/p1/y'),
+                    s.GetPrimAtPath('/p2'),
+                    s.GetPrimAtPath('/p2/y'),
+                ]
+            )
+        )
 
         # Reinstance /p2 for next test.
         s.GetPrimAtPath('/p2').SetInstanceable(True)
 
         self.assertTrue(
-            all([x.IsLoaded() for x in [
-                s.GetPrimAtPath('/p1'),
-                s.GetPrimAtPath('/p1/y'),
-                s.GetPrimAtPath('/p2'),
-                s.GetPrimAtPath('/p2/y')]]))
+            all(
+                x.IsLoaded()
+                for x in [
+                    s.GetPrimAtPath('/p1'),
+                    s.GetPrimAtPath('/p1/y'),
+                    s.GetPrimAtPath('/p2'),
+                    s.GetPrimAtPath('/p2/y'),
+                ]
+            )
+        )
 
         # Now do the same but nested-instance everything.
         l3 = Sdf.Layer.CreateAnonymous('.usda')
@@ -145,40 +160,52 @@ class TestUsdBugs(unittest.TestCase):
         s2 = Usd.Stage.Open(l3, Usd.Stage.LoadAll)
 
         self.assertTrue(
-            all([x.IsLoaded() for x in [
-                s2.GetPrimAtPath('/i1'),
-                s2.GetPrimAtPath('/i1/c'), 
-                s2.GetPrimAtPath('/i1/c/y'),
-                s2.GetPrimAtPath('/i2'),
-                s2.GetPrimAtPath('/i2/c'), 
-                s2.GetPrimAtPath('/i2/c/y')
-            ]]))
+            all(
+                x.IsLoaded()
+                for x in [
+                    s2.GetPrimAtPath('/i1'),
+                    s2.GetPrimAtPath('/i1/c'),
+                    s2.GetPrimAtPath('/i1/c/y'),
+                    s2.GetPrimAtPath('/i2'),
+                    s2.GetPrimAtPath('/i2/c'),
+                    s2.GetPrimAtPath('/i2/c/y'),
+                ]
+            )
+        )
 
         # Uninstance outer.
         s2.GetPrimAtPath('/i1').SetInstanceable(False)
-        
+
         self.assertTrue(
-            all([x.IsLoaded() for x in [
-                s2.GetPrimAtPath('/i1'),
-                s2.GetPrimAtPath('/i1/c'), 
-                s2.GetPrimAtPath('/i1/c/y'),
-                s2.GetPrimAtPath('/i2'),
-                s2.GetPrimAtPath('/i2/c'), 
-                s2.GetPrimAtPath('/i2/c/y')
-            ]]))
+            all(
+                x.IsLoaded()
+                for x in [
+                    s2.GetPrimAtPath('/i1'),
+                    s2.GetPrimAtPath('/i1/c'),
+                    s2.GetPrimAtPath('/i1/c/y'),
+                    s2.GetPrimAtPath('/i2'),
+                    s2.GetPrimAtPath('/i2/c'),
+                    s2.GetPrimAtPath('/i2/c/y'),
+                ]
+            )
+        )
 
         # Uninstance inner.
         s2.GetPrimAtPath('/i1/c').SetInstanceable(False)
 
         self.assertTrue(
-            all([x.IsLoaded() for x in [
-                s2.GetPrimAtPath('/i1'),
-                s2.GetPrimAtPath('/i1/c'), 
-                s2.GetPrimAtPath('/i1/c/y'),
-                s2.GetPrimAtPath('/i2'),
-                s2.GetPrimAtPath('/i2/c'), 
-                s2.GetPrimAtPath('/i2/c/y')
-            ]]))
+            all(
+                x.IsLoaded()
+                for x in [
+                    s2.GetPrimAtPath('/i1'),
+                    s2.GetPrimAtPath('/i1/c'),
+                    s2.GetPrimAtPath('/i1/c/y'),
+                    s2.GetPrimAtPath('/i2'),
+                    s2.GetPrimAtPath('/i2/c'),
+                    s2.GetPrimAtPath('/i2/c/y'),
+                ]
+            )
+        )
 
     def test_156222(self):
         from pxr import Sdf, Usd
@@ -192,8 +219,9 @@ class TestUsdBugs(unittest.TestCase):
         # The bug is non-deterministic because of threaded composition,
         # but it's easier to reproduce with more instance prims.
         numInstancePrims = 50
-        instancePrimPaths = [Sdf.Path('/Instance_{}'.format(i))
-                             for i in xrange(numInstancePrims)]
+        instancePrimPaths = [
+            Sdf.Path(f'/Instance_{i}') for i in xrange(numInstancePrims)
+        ]
         for path in instancePrimPaths:
             instancePrim = Sdf.CreatePrimInLayer(l, path)
             instancePrim.instanceable = True

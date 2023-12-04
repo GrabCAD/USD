@@ -42,14 +42,13 @@ class _MetaConstantGroup(type):
 
         # Search through the class-level properties and convert them into
         # constants.
-        allConstants = list()
+        allConstants = []
         for key, value in classdict.items():
-            if (key.startswith("_") or isinstance(value, classmethod) or
-                    isinstance(value, staticmethod)):
-                # Ignore variables which start with an underscore, and
-                # static/class methods.
-                pass
-            else:
+            if (
+                not key.startswith("_")
+                and not isinstance(value, classmethod)
+                and not isinstance(value, staticmethod)
+            ):
                 # Found a new constant.
                 allConstants.append(value)
 
@@ -64,11 +63,11 @@ class _MetaConstantGroup(type):
         # Finally, create the new ConstantGroup class.
         return super(_MetaConstantGroup, metacls).__new__(metacls, cls, bases, classdict)
 
-    def __setattr__(cls, name, value):
+    def __setattr__(self, name, value):
         """Prevent modification of properties after a group is created."""
         raise AttributeError("Constant groups cannot be modified.")
 
-    def __delattr__(cls, name):
+    def __delattr__(self, name):
         """Prevent deletion of properties after a group is created."""
         raise AttributeError("Constant groups cannot be modified.")
 

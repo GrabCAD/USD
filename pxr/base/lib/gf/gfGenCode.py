@@ -115,13 +115,10 @@ def GenerateFromTemplates(env, templates, suffix, outputPath, verbose=True):
                 'Template Error: {}: {}'.format(err, tmplName)
 
 def ScalarSuffix(scl):
-    if scl == 'GfHalf':
-        return 'h'
-    else:
-        return scl[0]
+    return 'h' if scl == 'GfHalf' else scl[0]
 
 def VecName(dim, scl):
-    return 'GfVec%s%s' % (dim, ScalarSuffix(scl))
+    return f'GfVec{dim}{ScalarSuffix(scl)}'
 
 def Eps(scl):
     return '0.001' if scl == 'GfHalf' else 'GF_MIN_VECTOR_LENGTH'
@@ -151,14 +148,14 @@ def GetVecSpecs():
 # GfRange
 def GetRangeSpecs():
     def RngName(dim, scl):
-        return 'GfRange%s%s' % (dim, ScalarSuffix(scl))
+        return f'GfRange{dim}{ScalarSuffix(scl)}'
 
     def MinMaxType(dim, scl):
         return scl if dim == 1 else VecName(dim, scl)
 
     def MinMaxParm(dim, scl):
         t = MinMaxType(dim, scl)
-        return t + ' ' if dim == 1 else 'const %s &' % t
+        return f'{t} ' if dim == 1 else f'const {t} &'
 
     scalarTypes = ['double', 'float']
     dimensions = [1, 2, 3]
@@ -182,7 +179,7 @@ def GetRangeSpecs():
 # GfQuat
 def GetQuatSpecs():
     def QuatName(scl):
-        return 'GfQuat%s' % ScalarSuffix(scl)
+        return f'GfQuat{ScalarSuffix(scl)}'
 
     scalarTypes = ['double', 'float', 'GfHalf']
     quatSpecs = sorted(
@@ -203,7 +200,7 @@ def GetQuatSpecs():
 # GfMatrix
 def GetMatrixSpecs(dim):
     def MatrixName(dim, scl):
-        return 'GfMatrix%s%s' % (dim, ScalarSuffix(scl))
+        return f'GfMatrix{dim}{ScalarSuffix(scl)}'
 
     scalarTypes = ['double', 'float']
     dimensions = [dim]
@@ -247,11 +244,14 @@ def ValidateFiles(srcDir, dstDir):
             continue
         dstContent, srcContent = open(dstFile).read(), open(srcFile).read()
         if dstContent != srcContent:
-            diff = '\n'.join(difflib.unified_diff(
-                srcContent.split('\n'),
-                dstContent.split('\n'),
-                'Source ' + os.path.basename(srcFile),
-                'Generated ' + os.path.basename(dstFile)))
+            diff = '\n'.join(
+                difflib.unified_diff(
+                    srcContent.split('\n'),
+                    dstContent.split('\n'),
+                    f'Source {os.path.basename(srcFile)}',
+                    f'Generated {os.path.basename(dstFile)}',
+                )
+            )
             diffs.append(diff)
             continue
 

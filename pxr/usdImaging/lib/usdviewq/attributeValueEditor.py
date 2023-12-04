@@ -73,11 +73,14 @@ class AttributeValueEditor(QtWidgets.QWidget):
         if not isinstance(attr, Usd.Attribute):
             return None
 
-        for attrView in self._extraAttrViews:
-            if attrView.CanView(attr):
-                return attrView
-
-        return None
+        return next(
+            (
+                attrView
+                for attrView in self._extraAttrViews
+                if attrView.CanView(attr)
+            ),
+            None,
+        )
 
     def refresh(self):
         # usually called upon frame change or selected attribute change
@@ -103,8 +106,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
         else: # Usd.Attribute or CustomAttribute
             self._val = self._attribute.Get(frame)
 
-        whichView = self._FindView(self._attribute)
-        if whichView:
+        if whichView := self._FindView(self._attribute):
             self._ui.stackedWidget.setCurrentWidget(whichView)
             whichView.SetAttribute(self._attribute, frame)
         else:

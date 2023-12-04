@@ -162,30 +162,27 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         elif role == QtCore.Qt.ToolTipRole:
             toolTip = 'Prim'
             if len(self.typeName) > 0:
-                toolTip = self.typeName + ' ' + toolTip
+                toolTip = f'{self.typeName} {toolTip}'
             if self.isInMaster:
-                toolTip = 'Master ' + toolTip
+                toolTip = f'Master {toolTip}'
             if not self.defined:
-                toolTip = 'Undefined ' + toolTip
+                toolTip = f'Undefined {toolTip}'
             elif self.abstract:
-                toolTip = 'Abstract ' + toolTip
+                toolTip = f'Abstract {toolTip}'
             else:
-                toolTip = 'Defined ' + toolTip
+                toolTip = f'Defined {toolTip}'
             if not self.active:
-                toolTip = 'Inactive ' + toolTip
+                toolTip = f'Inactive {toolTip}'
             elif self.isInstance:
-                toolTip = 'Instanced ' + toolTip
+                toolTip = f'Instanced {toolTip}'
             if self.hasArcs:
-                toolTip = toolTip + "<br>Has composition arcs"
+                toolTip += "<br>Has composition arcs"
             return toolTip
         else:
             return None
 
     def _typeData(self, role):
-        if role == QtCore.Qt.DisplayRole:
-            return self.typeName
-        else:
-            return self._nameData(role)
+        return self.typeName if role == QtCore.Qt.DisplayRole else self._nameData(role)
 
     def _visData(self, role):
         if role == QtCore.Qt.DisplayRole:

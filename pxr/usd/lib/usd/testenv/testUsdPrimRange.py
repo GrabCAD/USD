@@ -25,12 +25,12 @@
 import unittest
 from pxr import Sdf, Usd
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class TestUsdPrimRange(unittest.TestCase):
     def test_PrimIsDefined(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestPrimIsDefined.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestPrimIsDefined.{fmt}')
             pseudoRoot = s.GetPrimAtPath("/")
             foo = s.DefinePrim("/Foo", "Mesh")
             bar = s.OverridePrim("/Bar")
@@ -56,7 +56,7 @@ class TestUsdPrimRange(unittest.TestCase):
 
     def test_PrimHasDefiningSpecifier(self):
         for fmt in allFormats:
-            stageFile = 'testHasDefiningSpecifier.' + fmt
+            stageFile = f'testHasDefiningSpecifier.{fmt}'
             stage = Usd.Stage.Open(stageFile)
 
             # In the case of nested overs and defs, the onus is
@@ -64,20 +64,22 @@ class TestUsdPrimRange(unittest.TestCase):
             # restarting iteration upon hitting an over, or by iterating
             # through all prims.
             root = stage.GetPrimAtPath('/a1')
-            actual = []
             expected = [stage.GetPrimAtPath(x) for x in ['/a1', '/a1/a2']]
-            for prim in Usd.PrimRange.AllPrims(root):
-                if prim.HasDefiningSpecifier():
-                    actual.append(prim)
+            actual = [
+                prim
+                for prim in Usd.PrimRange.AllPrims(root)
+                if prim.HasDefiningSpecifier()
+            ]
             self.assertEqual(actual, expected)
 
             root = stage.GetPrimAtPath('/b1')
-            actual = []
             expected = [stage.GetPrimAtPath(x) for x in 
                         ['/b1/b2', '/b1/b2/b3/b4/b5/b6']]
-            for prim in Usd.PrimRange(root, Usd.PrimIsActive):
-                if prim.HasDefiningSpecifier():
-                    actual.append(prim)
+            actual = [
+                prim
+                for prim in Usd.PrimRange(root, Usd.PrimIsActive)
+                if prim.HasDefiningSpecifier()
+            ]
             self.assertEqual(actual, expected)
 
             # Note that the over is not included in our traversal.
@@ -89,7 +91,7 @@ class TestUsdPrimRange(unittest.TestCase):
 
     def test_PrimIsActive(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestPrimIsActive.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestPrimIsActive.{fmt}')
             foo = s.DefinePrim("/Foo", "Mesh")
             bar = s.DefinePrim("/Foo/Bar", "Mesh")
             baz = s.DefinePrim("/Foo/Bar/Baz", "Mesh")
@@ -112,7 +114,7 @@ class TestUsdPrimRange(unittest.TestCase):
        
     def test_PrimIsModelOrGroup(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestPrimIsModelOrGroup.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestPrimIsModelOrGroup.{fmt}')
             group = s.DefinePrim("/Group", "Xform")
             Usd.ModelAPI(group).SetKind('group')
             model = s.DefinePrim("/Group/Model", "Model")
@@ -141,7 +143,7 @@ class TestUsdPrimRange(unittest.TestCase):
 
     def test_PrimIsAbstract(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestPrimIsAbstract.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestPrimIsAbstract.{fmt}')
             group = s.DefinePrim("/Group", "Xform")
             c = s.CreateClassPrim("/class_Model")
 
@@ -159,10 +161,10 @@ class TestUsdPrimRange(unittest.TestCase):
 
     def test_PrimIsLoaded(self):
         for fmt in allFormats:
-            payloadStage = Usd.Stage.CreateInMemory("payload."+fmt)
+            payloadStage = Usd.Stage.CreateInMemory(f"payload.{fmt}")
             p = payloadStage.DefinePrim("/Payload", "Scope")
 
-            stage = Usd.Stage.CreateInMemory("scene."+fmt)
+            stage = Usd.Stage.CreateInMemory(f"scene.{fmt}")
             foo = stage.DefinePrim("/Foo")
             foo.SetPayload(payloadStage.GetRootLayer(), "/Payload")
 
@@ -186,10 +188,10 @@ class TestUsdPrimRange(unittest.TestCase):
 
     def test_PrimIsInstanceOrMasterOrRoot(self):
         for fmt in allFormats:
-            refStage = Usd.Stage.CreateInMemory("reference."+fmt)
+            refStage = Usd.Stage.CreateInMemory(f"reference.{fmt}")
             refStage.DefinePrim("/Ref/Child")
 
-            stage = Usd.Stage.CreateInMemory("scene."+fmt)
+            stage = Usd.Stage.CreateInMemory(f"scene.{fmt}")
             root = stage.DefinePrim("/Root")
 
             i = stage.DefinePrim("/Root/Instance")
@@ -216,7 +218,7 @@ class TestUsdPrimRange(unittest.TestCase):
 
     def test_RoundTrip(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory('TestRoundTrip.'+fmt)
+            stage = Usd.Stage.CreateInMemory(f'TestRoundTrip.{fmt}')
             prims = map(stage.DefinePrim, ['/foo', '/bar', '/baz'])
 
             treeRange = Usd.PrimRange(stage.GetPseudoRoot())
@@ -231,7 +233,7 @@ class TestUsdPrimRange(unittest.TestCase):
 
     def test_StageTraverse(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('TestStageTraverse.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'TestStageTraverse.{fmt}')
             pseudoRoot = s.GetPrimAtPath("/")
             foo = s.DefinePrim("/Foo", "Mesh")
             bar = s.OverridePrim("/Bar")
@@ -261,10 +263,10 @@ class TestUsdPrimRange(unittest.TestCase):
 
     def test_WithInstancing(self):
         for fmt in allFormats:
-            refStage = Usd.Stage.CreateInMemory("reference."+fmt)
+            refStage = Usd.Stage.CreateInMemory(f"reference.{fmt}")
             refStage.DefinePrim("/Ref/Child")
 
-            stage = Usd.Stage.CreateInMemory("scene."+fmt)
+            stage = Usd.Stage.CreateInMemory(f"scene.{fmt}")
             root = stage.DefinePrim("/Root")
 
             i = stage.DefinePrim("/Root/Instance")

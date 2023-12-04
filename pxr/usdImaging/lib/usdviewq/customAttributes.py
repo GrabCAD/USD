@@ -121,5 +121,4 @@ class ComputedPropertyFactory:
         elif propName == ComputedPropertyNames.LOCAL_WORLD_XFORM:
             return LocalToWorldXformAttribute(prim, self._rootDataModel)
         else:
-            raise ValueError("Cannot create computed property '{}'.".format(
-                propName))
+            raise ValueError(f"Cannot create computed property '{propName}'.")

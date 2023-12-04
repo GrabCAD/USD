@@ -92,12 +92,12 @@ def main():
     # exactly one input file.
     if args.out:
         if os.path.isfile(args.out) and not os.access(args.out, os.W_OK):
-            _Err("%s: error: no write permission for existing output file '%s'"
-                 % (parser.prog, args.out))
+            _Err(
+                f"{parser.prog}: error: no write permission for existing output file '{args.out}'"
+            )
             return 1
         if len(args.inputFiles) != 1:
-            _Err("%s: error: must supply exactly one input file with -o/--out" %
-                 parser.prog)
+            _Err(f"{parser.prog}: error: must supply exactly one input file with -o/--out")
             return 1
         ext = os.path.splitext(args.out)[1][1:]
         if args.usdFormat:
@@ -108,11 +108,8 @@ def main():
             formatArgsDict.update(dict(format=args.usdFormat))
         from pxr import Sdf
         if Sdf.FileFormat.FindByExtension(ext) is None:
-            _Err("%s: error: unknown output file extension '.%s'"
-                 % (parser.prog, ext))
+            _Err(f"{parser.prog}: error: unknown output file extension '.{ext}'")
             return 1
-    # If --out was not specified, then --usdFormat must be unspecified or must
-    # be 'usda'.
     elif args.usdFormat and args.usdFormat != 'usda':
         _Err("%s: error: can only write 'usda' format to stdout; specify an "
              "output file with -o/--out to write other formats" % parser.prog)
@@ -122,7 +119,7 @@ def main():
     if args.populationMask:
         if not args.flatten:
             # You can only mask a stage, not a layer.
-            _Err("%s: error: --mask requires --flatten" % parser.prog)
+            _Err(f"{parser.prog}: error: --mask requires --flatten")
             return 1
         args.populationMask = args.populationMask.replace(',', ' ').split()
 
@@ -144,7 +141,7 @@ def main():
             if not usdData:
                 raise Exception("Unknown error")
         except Exception as e:
-            _Err("Failed to open '%s' - %s" % (inputFile, e))
+            _Err(f"Failed to open '{inputFile}' - {e}")
             exitCode = 1
             continue
 
@@ -154,28 +151,27 @@ def main():
                 usdData.Export(args.out, args=formatArgsDict)
             except Exception as e:
                 # Let the user know an error occurred.
-                _Err("Error exporting '%s' to '%s' - %s" %
-                     (inputFile, args.out, e))
+                _Err(f"Error exporting '{inputFile}' to '{args.out}' - {e}")
 
                 # If the output file exists, let's try to rename it with
                 # '.quarantine' appended and let the user know.  Do this
                 # after the above error report because os.rename() can
                 # fail and we don't want to lose the above error.
                 if os.path.isfile(args.out):
-                    newName = args.out + '.quarantine'
+                    newName = f'{args.out}.quarantine'
                     try:
                         os.rename(args.out, newName)
-                        _Err("Possibly corrupt output file renamed to %s" %
-                            (newName, ))
+                        _Err(f"Possibly corrupt output file renamed to {newName}")
                     except Exception as e:
-                        _Err("Failed to rename possibly corrupt output " +
-                             "file from %s to %s" % (args.out, newName))
+                        _Err(
+                            f"Failed to rename possibly corrupt output file from {args.out} to {newName}"
+                        )
                 exitCode = 1
         else:
             try:
                 sys.stdout.write(usdData.ExportToString())
             except Exception as e:
-                _Err("Error writing '%s' to stdout; %s" % (inputFile, e))
+                _Err(f"Error writing '{inputFile}' to stdout; {e}")
                 exitCode = 1
 
     return exitCode

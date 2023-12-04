@@ -82,8 +82,10 @@ class TestUsdGeomSchemata(unittest.TestCase):
                 n = "displayOpacity"
 
             name = n[0].upper() + n[1:]
-            self.assertTrue(("Get" + name + "Attr") in dir(mesh), 
-                            ("Get" + name + "Attr() not found in: " + str(dir(mesh))))
+            self.assertTrue(
+                f"Get{name}Attr" in dir(mesh),
+                f"Get{name}Attr() not found in: {dir(mesh)}",
+            )
 
     def test_IsA(self):
 

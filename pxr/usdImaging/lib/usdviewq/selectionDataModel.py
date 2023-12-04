@@ -195,20 +195,18 @@ class _PrimSelection(object):
             else:
                 # Only some instances are selected, select all all of them.
                 self._selection[path] = ALL_INSTANCES
-        else:
-            # Trying to toggle a single instance.
-            if self._allInstancesSelected(path):
+        elif self._allInstancesSelected(path):
                 # Currently all instances are selected. Switch selection to
                 # only the new instance.
-                self._selection[path] = set([instance])
+            self._selection[path] = {instance}
+        else:
+            # Some instances already selected. Toggle the new instance
+            # in the selection.
+            instances = self._selection[path]
+            if instance in instances:
+                self._discardInstance(path, instance)
             else:
-                # Some instances already selected. Toggle the new instance
-                # in the selection.
-                instances = self._selection[path]
-                if instance in instances:
-                    self._discardInstance(path, instance)
-                else:
-                    instances.add(instance)
+                instances.add(instance)
 
     def getPrimPaths(self):
         """Get a list of paths that are at least partially selected."""
@@ -416,8 +414,7 @@ class SelectionDataModel(QtCore.QObject):
 
         sdfPath = Sdf.Path(str(path))
         if not sdfPath.IsAbsoluteRootOrPrimPath():
-            raise ValueError("Path must be a prim path, got: {}".format(
-                repr(sdfPath)))
+            raise ValueError(f"Path must be a prim path, got: {repr(sdfPath)}")
         return sdfPath
 
     def _validateInstanceIndexParameter(self, instance):
@@ -431,16 +428,15 @@ class SelectionDataModel(QtCore.QObject):
 
         if not validIndex:
             raise ValueError(
-                "Instance must be a positive int or ALL_INSTANCES"
-                ", got: {}".format(repr(instance)))
+                f"Instance must be a positive int or ALL_INSTANCES, got: {repr(instance)}"
+            )
 
     def _ensureValidPropPath(self, prop):
         """Validate a property."""
 
         sdfPath = Sdf.Path(str(prop))
         if not sdfPath.IsPropertyPath():
-            raise ValueError("Path must be a property path, got: {}".format(
-                repr(sdfPath)))
+            raise ValueError(f"Path must be a property path, got: {repr(sdfPath)}")
         return sdfPath
 
     def _ensureValidTargetPath(self, target):
@@ -506,14 +502,13 @@ class SelectionDataModel(QtCore.QObject):
     def _buildPropPath(self, primPath, propName):
         """Build a new property path from a prim path and a property name."""
 
-        return Sdf.Path(str(primPath) + "." + propName)
+        return Sdf.Path(f"{str(primPath)}.{propName}")
 
     def _validateComputedPropName(self, propName):
         """Validate a computed property name."""
 
         if propName not in ComputedPropertyNames:
-            raise ValueError("Invalid computed property name: {}".format(
-                repr(propName)))
+            raise ValueError(f"Invalid computed property name: {repr(propName)}")
 
     def _switchProps(self, fromPrimPath, toPrimPath):
         """Switch all selected properties from one prim to another. Only do this
@@ -817,19 +812,17 @@ class SelectionDataModel(QtCore.QObject):
 
         propPaths = [self._buildPropPath(*propTuple)
             for propTuple in self._propSelection.getPropPaths()]
-        if len(propPaths) > 0:
-            return propPaths[-1]
-        else:
-            return None
+        return propPaths[-1] if propPaths else None
 
     def getPropPaths(self):
         """Get a list of all selected properties."""
 
         self._requireNotBatchingProps()
 
-        propPaths = [self._buildPropPath(*propTuple)
-            for propTuple in self._propSelection.getPropPaths()]
-        return propPaths
+        return [
+            self._buildPropPath(*propTuple)
+            for propTuple in self._propSelection.getPropPaths()
+        ]
 
     def getPropTargetPaths(self):
         """Get a dictionary which maps selected properties to a set of their
@@ -881,10 +874,7 @@ class SelectionDataModel(QtCore.QObject):
         """Get the focus property from the property selection."""
 
         focusPath = self.getFocusPropPath()
-        if focusPath is None:
-            return None
-
-        return self._getPropFromPath(focusPath)
+        return None if focusPath is None else self._getPropFromPath(focusPath)
 
     def getProps(self):
         """Get a list of all selected properties."""
@@ -952,10 +942,7 @@ class SelectionDataModel(QtCore.QObject):
         self._requireNotBatchingComputedProps()
 
         propPaths = self._computedPropSelection.getPropPaths()
-        if len(propPaths) > 0:
-            return propPaths[-1]
-        else:
-            return (None, None)
+        return propPaths[-1] if len(propPaths) > 0 else (None, None)
 
     def getComputedPropPaths(self):
         """Get a list of all selected computed properties."""

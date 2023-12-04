@@ -45,27 +45,25 @@ def prettyPrint(v):
             valstring = prettyPrint(pair[1])
             result += "------\n%s:\n%s\n" % (keystring, valstring)
 
-    # Pretty-print list
     elif isinstance(v, list):
         dialog = progressDialog("Pretty-printing list...", len(v))
 
         result = "[\n"
         for i in range(len(v)):
             dialog.setValue(i)
-            result += str(i) + ": " + prettyPrint(v[i]) + "\n"
+            result += f"{str(i)}: {prettyPrint(v[i])}" + "\n"
             if (dialog.wasCanceled()):
                 return "Pretty-printing canceled"
         result += "]\n"
         dialog.done(0)
 
-    # Pretty-print tuple
     elif isinstance(v, tuple):
         dialog = progressDialog("Pretty-printing tuple...", len(v))
 
         result = "(\n"
         for i in range(len(v)):
             dialog.setValue(i)
-            result += str(i) + ": " + prettyPrint(v[i]) + "\n"
+            result += f"{str(i)}: {prettyPrint(v[i])}" + "\n"
             if (dialog.wasCanceled()):
                 return "Pretty-printing canceled"
         result += ")\n"

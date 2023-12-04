@@ -136,11 +136,12 @@ class _Completer(object):
         words = words.union(set(_GetClassMembers(myobject.__class__)))
 
         words = list(words)
-        matches = set()
         n = len(attr)
-        for word in words:
-            if word[:n] == attr and word != "__builtins__":
-                matches.add("%s%s.%s" % (prefix, expr, word))
+        matches = {
+            f"{prefix}{expr}.{word}"
+            for word in words
+            if word[:n] == attr and word != "__builtins__"
+        }
         return list(matches)
 
 def _GetClassMembers(cls):
@@ -280,9 +281,7 @@ class Controller(QtCore.QObject):
         # interpreter banner
         self.write('Python %s on %s.\n' % (sys.version, sys.platform))
 
-        # Run $PYTHONSTARTUP startup script.
-        startupFile = os.getenv('PYTHONSTARTUP')
-        if startupFile:
+        if startupFile := os.getenv('PYTHONSTARTUP'):
             path = os.path.realpath(os.path.expanduser(startupFile))
             if os.path.isfile(path):
                 self.ExecStartupFile(path)
@@ -294,8 +293,7 @@ class Controller(QtCore.QObject):
     def _DoAutoImports(self):
         modules = Tf.ScriptModuleLoader().GetModulesDict()
         for name, mod in modules.items():
-            self.interpreter.runsource('import ' + mod.__name__ +
-                                       ' as ' + name + '\n')
+            self.interpreter.runsource((f'import {mod.__name__} as {name}' + '\n'))
 
     @_Redirected
     def ExecStartupFile(self, path):
@@ -304,9 +302,9 @@ class Controller(QtCore.QObject):
         # various startup scripts, so that they can access the location from
         # which they are being run.
         # also, update the globals dict after we exec the file (bug 9529)
-        self.interpreter.runsource( 'g = dict(globals()); g["__file__"] = ' +
-                                    '"%s"; execfile("%s", g);' % (path, path) +
-                                    'del g["__file__"]; globals().update(g);' )
+        self.interpreter.runsource(
+            f'g = dict(globals()); g["__file__"] = "{path}"; execfile("{path}", g);del g["__file__"]; globals().update(g);'
+        )
         self.SetInputStart()
         self.lines = []
 
@@ -378,13 +376,11 @@ class Controller(QtCore.QObject):
 
         cursor.setPosition(self.textEdit.StartOfInput(),
                            QtGui.QTextCursor.KeepAnchor)
-        txt = str(cursor.selectedText())
-
-        if len(txt) == 0:
-            return '\n'
-        else:
+        if txt := str(cursor.selectedText()):
             self.write('\n')
             return txt
+        else:
+            return '\n'
 
     @_Redirected
     def write(self, text):
@@ -418,8 +414,7 @@ class Controller(QtCore.QObject):
     def _GetStringLengthInPixels(self, string):
         font = self.textEdit.font()
         fm = QtGui.QFontMetrics(font)
-        strlen = fm.width(string)
-        return strlen
+        return fm.width(string)
 
     def _CompleteSlot(self):
 
@@ -429,18 +424,14 @@ class Controller(QtCore.QObject):
         cursor.setPosition(self.textEdit.StartOfInput(),
                            QtGui.QTextCursor.KeepAnchor)
         text = str(cursor.selectedText())
-        tokens = text.split()
-        token = ''
-        if len(tokens) != 0:
-            token = tokens[-1]
-
+        token = tokens[-1] if (tokens := text.split()) else ''
         completions = []
         p = self.completer.Complete(token,len(completions))
         while p != None:
             completions.append(p)
             p = self.completer.Complete(token, len(completions))
 
-        if len(completions) == 0:
+        if not completions:
             return
 
         elif len(completions) != 1:
@@ -510,7 +501,7 @@ class Controller(QtCore.QObject):
             # was previously
             i = line.rfind(token)
             textToRight = line[i+len(token):]
-            line = line[0:i] + cp + textToRight
+            line = line[:i] + cp + textToRight
             self.write(line)
 
             # replace the line and reset the cursor
@@ -522,7 +513,7 @@ class Controller(QtCore.QObject):
 
         else:
             i = line.rfind(token)
-            line = line[0:i] + completions[0] + line[i+len(token):]
+            line = line[:i] + completions[0] + line[i+len(token):]
 
             # replace the line and reset the cursor
             cursor = self.textEdit.textCursor()
@@ -541,9 +532,8 @@ class Controller(QtCore.QObject):
     def _NextSlot(self):
         if len(self.history):
             # if we have no history pointer, we can't go forward..
-            if (self.historyPointer == None):
+            if self.historyPointer is None:
                 return
-            # if we are at the end of our history stack, we can't go forward
             elif (self.historyPointer == len(self.history) - 1):
                 self._ClearLine()
                 self.write(self.historyInput)
@@ -556,10 +546,9 @@ class Controller(QtCore.QObject):
         if len(self.history):
             # if we have no history pointer, set it to the most recent
             # item in the history stack, and stash away our current input
-            if (self.historyPointer == None):
+            if self.historyPointer is None:
                 self.historyPointer = len(self.history)
                 self.historyInput = self._GetInputLine()
-            # if we are at the end of our history, beep
             elif (self.historyPointer <= 0):
                 return
             self.historyPointer -= 1
@@ -574,8 +563,7 @@ class Controller(QtCore.QObject):
                            QtGui.QTextCursor.MoveAnchor)
         cursor.movePosition(QtGui.QTextCursor.EndOfBlock,
                             QtGui.QTextCursor.KeepAnchor)
-        txt = str(cursor.selectedText())
-        return txt
+        return str(cursor.selectedText())
 
     def _ClearLine(self):
         cursor = self.textEdit.textCursor()
@@ -783,7 +771,7 @@ class View(QtWidgets.QTextEdit):
                 super(View, self).keyPressEvent(e)
         elif key == QtCore.Qt.Key_Right:
             super(View, self).keyPressEvent(e)
-        elif key == QtCore.Qt.Key_Return or key == QtCore.Qt.Key_Enter:
+        elif key in [QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter]:
             # move cursor to end of line.
             # emit signal to tell controller enter was pressed.
             if not cursorInInput:
@@ -794,20 +782,18 @@ class View(QtWidgets.QTextEdit):
             # emit returnPressed
             self.returnPressed.emit()
 
-        elif (key == QtCore.Qt.Key_Up
-                or key == QtCore.Qt.Key_Down
-                # support Ctrl+P and Ctrl+N for history
-                # navigation along with arrows
-                or (ctrl and (key == QtCore.Qt.Key_P
-                              or key == QtCore.Qt.Key_N))
-                # support Ctrl+E and Ctrl+A for terminal
-                # style nav. to the ends of the line
-                or (ctrl and (key == QtCore.Qt.Key_A
-                              or key == QtCore.Qt.Key_E))):
+        elif (
+            key == QtCore.Qt.Key_Up
+            or key == QtCore.Qt.Key_Down
+            or ctrl
+            and key in [QtCore.Qt.Key_P, QtCore.Qt.Key_N]
+            or ctrl
+            and key in [QtCore.Qt.Key_A, QtCore.Qt.Key_E]
+        ):
             if cursorInInput:
-                if (key == QtCore.Qt.Key_Up or key == QtCore.Qt.Key_P):
+                if key in [QtCore.Qt.Key_Up, QtCore.Qt.Key_P]:
                     self.requestPrev.emit()
-                if (key == QtCore.Qt.Key_Down or key == QtCore.Qt.Key_N):
+                if key in [QtCore.Qt.Key_Down, QtCore.Qt.Key_N]:
                     self.requestNext.emit()
                 if (key == QtCore.Qt.Key_A):
                     self._MoveCursorToStartOfInput(False)
@@ -889,9 +875,11 @@ Type `help(usdviewApi)` to view available API methods and properties.
 
 Frequently used properties:
 {}\n""".format(
-    "".join("    usdviewApi.{} - {}\n".format(
-        name, getattr(UsdviewApi, name).__doc__)
-    for name in FREQUENTLY_USED))
+    "".join(
+        f"    usdviewApi.{name} - {getattr(UsdviewApi, name).__doc__}\n"
+        for name in FREQUENTLY_USED
+    )
+)
 
 
 class Myconsole(View):

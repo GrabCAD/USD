@@ -743,9 +743,9 @@ class TestUsdValueClips(unittest.TestCase):
 
     def test_ClipAuthoring(self):
         """Tests clip authoring API on Usd.ClipsAPI"""
-        allFormats = ['usd' + x for x in 'ac']
+        allFormats = [f'usd{x}' for x in 'ac']
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory('TestClipAuthoring.'+fmt)
+            stage = Usd.Stage.CreateInMemory(f'TestClipAuthoring.{fmt}')
 
             prim = stage.DefinePrim('/Model')
             model = Usd.ClipsAPI(prim)
@@ -804,7 +804,7 @@ class TestUsdValueClips(unittest.TestCase):
 
             model.SetClipTemplateEndTime(5)
             self.assertEqual(model.GetClipTemplateEndTime(), 5)
-        
+
             # Ensure we can't set the clipTemplateStride to 0
             with self.assertRaises(Tf.ErrorException) as e:
                 model.SetClipTemplateStride(0)
@@ -823,9 +823,9 @@ class TestUsdValueClips(unittest.TestCase):
 
     def test_ClipSetAuthoring(self):
         """Tests clip authoring API with clip sets on Usd.ClipsAPI"""
-        allFormats = ['usd' + x for x in 'ac']
+        allFormats = [f'usd{x}' for x in 'ac']
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory('TestClipSetAuthoring.'+fmt)
+            stage = Usd.Stage.CreateInMemory(f'TestClipSetAuthoring.{fmt}')
 
             prim = stage.DefinePrim('/Model')
             model = Usd.ClipsAPI(prim)
@@ -895,7 +895,7 @@ class TestUsdValueClips(unittest.TestCase):
 
             model.SetClipTemplateEndTime(5, clipSetName)
             self.assertEqual(model.GetClipTemplateEndTime(clipSetName), 5)
-        
+
             # Ensure we can't set the clipTemplateStride to 0
             with self.assertRaises(Tf.ErrorException) as e:
                 model.SetClipTemplateStride(0, clipSetName)

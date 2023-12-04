@@ -50,7 +50,6 @@ class TestUsdCollectionAPI(unittest.TestCase):
     def tearDown(self):
         # Discard any edits made to layers
         stage.Reload()
-        pass
 
     def test_AuthorCollections(self):
         # ----------------------------------------------------------
@@ -424,10 +423,10 @@ class TestUsdCollectionAPI(unittest.TestCase):
                 else:
                     self.assertNotEqual(mqueries[i], mqueries[j])
 
-        # Confirm that the hash operator lets us use python dicts
-        mqueryToPath = {}
-        for (coll,mquery) in zip(collections, mqueries):
-            mqueryToPath[mquery] = coll.GetCollectionPath()
+        mqueryToPath = {
+            mquery: coll.GetCollectionPath()
+            for coll, mquery in zip(collections, mqueries)
+        }
         self.assertEqual(len(mqueryToPath.keys()), len(mqueries))
 
 if __name__ == "__main__":

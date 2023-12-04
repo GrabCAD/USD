@@ -220,7 +220,7 @@ class Launcher(object):
             AppController.clearSettings()
 
         # Find the resource directory
-        resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
+        resourceDir = f"{os.path.dirname(os.path.realpath(__file__))}/"
 
         # Create the Qt application
         app = QtWidgets.QApplication(sys.argv)

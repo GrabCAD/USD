@@ -25,12 +25,12 @@
 import unittest
 from pxr import Usd, Pcp, Sdf, Tf
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class TestUsdInherits(unittest.TestCase):
     def test_BasicApi(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt)
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}")
             classA = stage.CreateClassPrim("/ClassA")
             concrete = stage.OverridePrim("/Concrete")
             items = None
@@ -65,13 +65,13 @@ class TestUsdInherits(unittest.TestCase):
 
     def test_InheritedPrim(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt)
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}")
             classA = stage.CreateClassPrim("/ClassA")
             stage.DefinePrim("/ClassA/Child")
 
             concrete = stage.DefinePrim("/Concrete")
 
-            assert not concrete.GetChildren() 
+            assert not concrete.GetChildren()
             assert concrete.GetInherits().AddInherit(classA.GetPath())
 
             self.assertEqual(concrete.GetChildren()[0].GetPath(),
@@ -85,8 +85,8 @@ class TestUsdInherits(unittest.TestCase):
 
     def test_InheritPathMapping(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
-            
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}", sessionLayer=None)
+
             # Create test scenegraph 
             stage.DefinePrim("/Ref")
             stage.DefinePrim("/Ref/Class")
@@ -114,13 +114,13 @@ class TestUsdInherits(unittest.TestCase):
             # Add an inherit path to the instance prim pointing to the 
             # class prim.
             instancePrim.GetInherits() \
-                        .AddInherit("/Model/Class", Usd.ListPositionFrontOfPrependList)
+                            .AddInherit("/Model/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedInheritPaths = Sdf.PathListOp()
             expectedInheritPaths.prependedItems = [Sdf.Path("/Ref/Class")]
 
             instancePrimSpec = \
-                stage.GetRootLayer().GetPrimAtPath("/Ref/Instance")
+                    stage.GetRootLayer().GetPrimAtPath("/Ref/Instance")
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
 
@@ -134,7 +134,7 @@ class TestUsdInherits(unittest.TestCase):
 
             # Add a global inherit path.
             instancePrim.GetInherits() \
-                        .AddInherit("/Class", Usd.ListPositionFrontOfPrependList)
+                            .AddInherit("/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedInheritPaths = Sdf.PathListOp()
             expectedInheritPaths.prependedItems = [Sdf.Path("/Class")]
@@ -155,7 +155,7 @@ class TestUsdInherits(unittest.TestCase):
             # map across the reference edit target.
             with self.assertRaises(Tf.ErrorException):
                 instancePrim.GetInherits() \
-                            .AddInherit("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
+                                .AddInherit("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
 
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
@@ -167,7 +167,7 @@ class TestUsdInherits(unittest.TestCase):
 
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
-            
+
             # Set inherit paths using the SetInherits API
             instancePrim.GetInherits().SetInherits(
                 ["/Model/Class", "/Class"])
@@ -187,7 +187,7 @@ class TestUsdInherits(unittest.TestCase):
 
     def test_InheritPathMappingVariants(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}", sessionLayer=None)
 
             # Create test scenegraph with variant
             refPrim = stage.DefinePrim("/Root")
@@ -208,7 +208,7 @@ class TestUsdInherits(unittest.TestCase):
             # Check that authored inherit path does *not* include variant
             # selection.
             instancePrimSpec = \
-                stage.GetRootLayer().GetPrimAtPath("/Root{v=x}Instance")
+                    stage.GetRootLayer().GetPrimAtPath("/Root{v=x}Instance")
             expectedInheritPaths = Sdf.PathListOp()
             expectedInheritPaths.prependedItems = [Sdf.Path("/Root/Class")]
             self.assertEqual(instancePrimSpec.GetInfo('inheritPaths'),
@@ -216,7 +216,7 @@ class TestUsdInherits(unittest.TestCase):
 
     def test_GetAllDirectInherits(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory('x.'+fmt, sessionLayer=None)
+            stage = Usd.Stage.CreateInMemory(f'x.{fmt}', sessionLayer=None)
 
             # Create a simple prim hierarchy, /Parent/Child, then add some arcs.
             child = stage.DefinePrim('/Parent/Child')
@@ -249,11 +249,11 @@ class TestUsdInherits(unittest.TestCase):
 
     def test_ListPosition(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
+            stage = Usd.Stage.CreateInMemory(f"x.{fmt}", sessionLayer=None)
 
             prim = stage.DefinePrim('/prim')
             for c in 'abcde':
-                stage.DefinePrim('/'+c)
+                stage.DefinePrim(f'/{c}')
 
             inh = prim.GetInherits()
 

@@ -42,7 +42,7 @@ class TestGfSize(unittest.TestCase):
             # constructors
             self.assertIsInstance(Size(), Size)
             self.assertIsInstance(Size(Size()), Size)
-            
+
             if Size.dimension == 2:
                 self.assertIsInstance(Size(Gf.Vec2i()), Size)
                 self.assertIsInstance(Size(3, 4), Size)
@@ -86,9 +86,9 @@ class TestGfSize(unittest.TestCase):
             self.assertEqual(makeValue(Size,(10,20,30)) / 10, makeValue(Size,(1,2,3)))
 
             self.assertEqual(s1, eval(repr(s1)))
-            
+
             self.assertTrue(len(str(makeValue(Size,(1,2,3)))))
-            
+
             # indexing
             s = Size()
             s[-1] = 3
@@ -97,7 +97,7 @@ class TestGfSize(unittest.TestCase):
             self.assertEqual(len(s), s.dimension)
 
             s = makeValue(Size, (1,2,3))
-            self.assertTrue(not 10 in s)
+            self.assertTrue(10 not in s)
 
             # expect error
             with self.assertRaises(IndexError):

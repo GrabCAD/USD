@@ -77,21 +77,26 @@ class AppEventFilter(QtCore.QObject):
             return self.WantsNavKeys(w.parent())
 
     def NavigableOrTopLevelObject(self, w):
-        if (not w or 
-            self._IsWindow(w) or 
-            isinstance(w, QtWidgets.QTreeView) or
-            isinstance(w, QtWidgets.QDialog)):
+        if (
+            not w
+            or self._IsWindow(w)
+            or isinstance(w, (QtWidgets.QTreeView, QtWidgets.QDialog))
+        ):
             return w
-        else:
-            parent = w.parent()
-            return w if not parent else self.NavigableOrTopLevelObject(parent)
+        parent = w.parent()
+        return w if not parent else self.NavigableOrTopLevelObject(parent)
         
     def JealousFocus(self, w):
-        return (isinstance(w, QtWidgets.QLineEdit) or 
-                isinstance(w, QtWidgets.QComboBox) or
-                isinstance(w, QtWidgets.QTextEdit) or
-                isinstance(w, QtWidgets.QAbstractSlider) or
-                isinstance(w, QtWidgets.QAbstractSpinBox))
+        return isinstance(
+            w,
+            (
+                QtWidgets.QLineEdit,
+                QtWidgets.QComboBox,
+                QtWidgets.QTextEdit,
+                QtWidgets.QAbstractSlider,
+                QtWidgets.QAbstractSpinBox,
+            ),
+        )
             
     def SetFocusFromMousePos(self, backupWidget):
         # It's possible the mouse isn't over any of our windows at the time,

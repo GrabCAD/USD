@@ -25,7 +25,7 @@
 import sys, unittest
 from pxr import Sdf,Usd,Tf
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class NoticeTester(unittest.TestCase):
     def setUp(self):
@@ -62,7 +62,7 @@ class NoticeTester(unittest.TestCase):
 
         for fmt in allFormats:
             self._ResetCounters()
-            s = Usd.Stage.CreateInMemory('Basics.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'Basics.{fmt}')
             s.DefinePrim("/Foo")
             self.assertEqual(self._changeCount, 2)
             self.assertEqual(self._contentsCount, 1)
@@ -81,10 +81,6 @@ class NoticeTester(unittest.TestCase):
             self.assertEqual(self._changeCount, 4)
             self.assertEqual(self._contentsCount, 2)     # Why 2? I expected 1. 
             self.assertEqual(self._objectsCount, 2)      # We get an additional
-                                                    # object resync notice when
-                                                    # we first drop an over, in
-                                                    # addition to the info-only
-                                                    # change notice.
             self.assertEqual(self._editTargetsCount, 0)
 
             self._ResetCounters()
@@ -102,7 +98,7 @@ class NoticeTester(unittest.TestCase):
         self.assertTrue(self._objectsCount == 0)
         payloadBasedFile = 'payload_base.usda'
         payloadBasedStage = Usd.Stage.Open(payloadBasedFile)
-        
+
         # the payload will be already loaded since we didn't supply
         # the additional parameter to the stage constructor
         payloadBasedStage.Unload('/Foo')
@@ -134,7 +130,7 @@ class NoticeTester(unittest.TestCase):
 
         for fmt in allFormats:
             self._ResetCounters()
-            s = Usd.Stage.CreateInMemory('ObjectsChangedNotice.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'ObjectsChangedNotice.{fmt}')
 
             objectsChanged = Tf.Notice.Register(Usd.Notice.ObjectsChanged, 
                                                        OnResync, s)
@@ -148,7 +144,7 @@ class NoticeTester(unittest.TestCase):
     def ObjectsChangedNoticeForAttributes(self):
         for fmt in allFormats:
             self._ResetCounters()
-            s = Usd.Stage.CreateInMemory('ObjectsChangedNoticeForProps.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'ObjectsChangedNoticeForProps.{fmt}')
             prim = s.DefinePrim("/Foo");
 
             def OnAttributeCreation(notice, stage):
@@ -167,7 +163,7 @@ class NoticeTester(unittest.TestCase):
                 self.assertEqual(notice.GetStage(), stage)
                 self.assertEqual(notice.GetResyncedPaths(), [])
                 self.assertTrue(notice.GetChangedInfoOnlyPaths() == \
-                    [Sdf.Path("/Foo.attr")])
+                        [Sdf.Path("/Foo.attr")])
                 self.assertTrue(notice.AffectedObject(
                     stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
                 self.assertTrue(not notice.ResyncedObject(
@@ -184,7 +180,7 @@ class NoticeTester(unittest.TestCase):
     def ObjectsChangedNoticeForRelationships(self):
         for fmt in allFormats:
             self._ResetCounters()
-            s = Usd.Stage.CreateInMemory('ObjectsChangedNoticeForRels.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'ObjectsChangedNoticeForRels.{fmt}')
             prim = s.DefinePrim("/Foo");
 
             def OnRelationshipCreation(notice, stage):

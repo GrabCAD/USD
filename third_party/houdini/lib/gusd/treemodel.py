@@ -89,9 +89,7 @@ class TreeItem(object):
         return self._parent
 
     def row(self):
-        if self._parent:
-            return self._parent._children.index(self)
-        return 0
+        return self._parent._children.index(self) if self._parent else 0
     
     def setData(self, column, value):
         if column < 0 or column >= len(self._data):
@@ -180,7 +178,7 @@ class TreeModel(QAbstractItemModel):
                 self._stage = Usd.Stage.Open(usdFile, Usd.Stage.LoadNone)
             except:
                 if usdFile != '':
-                    print('Error: Tree View failed to open "%s"' % usdFile)
+                    print(f'Error: Tree View failed to open "{usdFile}"')
 
         if self._stage:
             rootPrim = self._stage.GetPseudoRoot()
@@ -216,11 +214,10 @@ class TreeModel(QAbstractItemModel):
         if prim.HasPayload():
             return True
 
-        for child in prim.GetFilteredChildren(predicate):
-            if self.IsPrimBoundable(child, predicate):
-                return True
-
-        return False
+        return any(
+            self.IsPrimBoundable(child, predicate)
+            for child in prim.GetFilteredChildren(predicate)
+        )
 
     def BuildTree(self, startPrim):
         startItem = self._primPathToItemMap.get(startPrim.GetPath())
@@ -246,9 +243,7 @@ class TreeModel(QAbstractItemModel):
 
             parentPrim = prim.GetParent()
 
-            parentItem = self._primPathToItemMap.get(parentPrim.GetPath())
-            if parentItem:
-                
+            if parentItem := self._primPathToItemMap.get(parentPrim.GetPath()):
                 primName = prim.GetName()
                 primTypeName = prim.GetTypeName()
                 primPath = prim.GetPath()
@@ -261,9 +256,11 @@ class TreeModel(QAbstractItemModel):
                 # This is because when parentItem is the top-most root item,
                 # its data is a header string instead of a CheckState).
                 importState = Qt.Unchecked
-                if parentItem.data(COL_IMPORT) == Qt.Checked or\
-                    parentItem.data(COL_IMPORT) == Qt.PartiallyChecked:
-                        importState = Qt.PartiallyChecked
+                if parentItem.data(COL_IMPORT) in [
+                    Qt.Checked,
+                    Qt.PartiallyChecked,
+                ]:
+                    importState = Qt.PartiallyChecked
 
                 # Retrieve variants from the prim.
                 variants = []
@@ -271,10 +268,10 @@ class TreeModel(QAbstractItemModel):
                 for name in variantSets.GetNames():
                     variantSet = variantSets.GetVariantSet(name)
                     variants.append(VariantInfo(\
-                        name = name,\
-                        choices = variantSet.GetVariantNames(),\
-                        initialSelection = variantSet.GetVariantSelection(),\
-                        enabled = False))
+                            name = name,\
+                            choices = variantSet.GetVariantNames(),\
+                            initialSelection = variantSet.GetVariantSelection(),\
+                            enabled = False))
 
                 data = [primName, importState, primTypeName, variants]
                 childItem = TreeItem(data, parentItem, primPath, hasUnloadedPayload)
@@ -308,7 +305,7 @@ class TreeModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
-        if role != Qt.DisplayRole and role != Qt.EditRole:
+        if role not in [Qt.DisplayRole, Qt.EditRole]:
             return None
 
         item = index.internalPointer()
@@ -333,8 +330,7 @@ class TreeModel(QAbstractItemModel):
 
         parentItem = self.itemFromIndex(parent)
 
-        childItem = parentItem.child(row)
-        if childItem:
+        if childItem := parentItem.child(row):
             return self.createIndex(row, column, childItem)
         else:
             return QModelIndex()
@@ -349,10 +345,7 @@ class TreeModel(QAbstractItemModel):
         return self.indexFromItem(parentItem)
 
     def itemFromIndex(self, index):
-        if index.isValid():
-            return index.internalPointer()
-        else:
-            return self._rootItem
+        return index.internalPointer() if index.isValid() else self._rootItem
 
     def indexFromItem(self, item, column = 0):
         if not item or item == self._rootItem:
@@ -361,10 +354,7 @@ class TreeModel(QAbstractItemModel):
         return self.createIndex(item.row(), column, item)
 
     def rowCount(self, parent):
-        if parent.column() > 0:
-            return 0
-
-        return self.itemFromIndex(parent).childCount()
+        return 0 if parent.column() > 0 else self.itemFromIndex(parent).childCount()
 
     def setData(self, index, value, role=Qt.EditRole):
         if role != Qt.EditRole:
@@ -418,15 +408,10 @@ class TreeModel(QAbstractItemModel):
                 self.SetImportState(child, Qt.PartiallyChecked)
 
     def GetPrim(self, item):
-        if not self._stage:
-            return None
-        return self._stage.GetPrimAtPath(item.primPath())
+        return None if not self._stage else self._stage.GetPrimAtPath(item.primPath())
 
     def GetNode(self):
-        if self._sessionId != -1:
-            return hou.nodeBySessionId(self._sessionId)
-        else:
-            return None
+        return hou.nodeBySessionId(self._sessionId) if self._sessionId != -1 else None
 
     def LoadPrimAndBuildTree(self, prim, item):
         if prim:
@@ -548,11 +533,10 @@ class TreeModel(QAbstractItemModel):
                 # that IS oldVariantPrimPath, then this path either represents
                 # item or a descendant of item.
                 if path.GetCommonPrefix(oldVariantPrimPath) ==\
-                    oldVariantPrimPath:
-                    pathItem = self.ItemFromVariantPrimPath(path)
-                    if pathItem:
+                        oldVariantPrimPath:
+                    if pathItem := self.ItemFromVariantPrimPath(path):
                         self._importedPrimPaths[i] =\
-                            self.VariantPrimPathFromItem(pathItem)
+                                self.VariantPrimPathFromItem(pathItem)
                         self.SetImportState(pathItem, Qt.Checked)
                         importedPrimPathsChanged = True
 
@@ -577,7 +561,7 @@ class TreeModel(QAbstractItemModel):
         i = 0
         while i < len(paths):
             item = self._primPathToItemMap.get(\
-                paths[i].StripAllVariantSelections(), None)
+                    paths[i].StripAllVariantSelections(), None)
 
             # Not finding this item means this primPath can't be included,
             # so break from this loop and return None.
@@ -585,16 +569,17 @@ class TreeModel(QAbstractItemModel):
                 break
 
             prim = self.GetPrim(item)
-            newVariants = []
             oldVariants = item.data(COL_VARIANT)
 
-            # Copy each oldVariant into newVariants. However, don't copy the
-            # _enabled flag. Instead, start all the newVariants as disabled.
-            for oldVariant in oldVariants:
-                newVariants.append(VariantInfo(oldVariant._name,\
-                                               oldVariant._choices,\
-                                               oldVariant._initialSelection,\
-                                               enabled = False))
+            newVariants = [
+                VariantInfo(
+                    oldVariant._name,
+                    oldVariant._choices,
+                    oldVariant._initialSelection,
+                    enabled=False,
+                )
+                for oldVariant in oldVariants
+            ]
             i += 1
             # Update prim and newVariants from variant selections in primPath.
             while i < len(paths) and paths[i].IsPrimVariantSelectionPath():
@@ -608,14 +593,11 @@ class TreeModel(QAbstractItemModel):
                         newVariant._currentSelection = selection
                 i += 1
 
-            # Now check for changes between the old and new variants.
-            variantsChanged = False
-            for old, new in zip(oldVariants, newVariants):
-                if old._enabled != new._enabled or\
-                    old._currentSelection != new._currentSelection:
-                    variantsChanged = True
-                    break
-
+            variantsChanged = any(
+                old._enabled != new._enabled
+                or old._currentSelection != new._currentSelection
+                for old, new in zip(oldVariants, newVariants)
+            )
             if variantsChanged:
                 self.ClearTree(item)
                 self.LoadPrimAndBuildTree(prim, item)
@@ -629,25 +611,23 @@ class TreeModel(QAbstractItemModel):
         return item
 
     def VariantPrimPathFromItem(self, item):
-        parentItem = item.parent()
-        if parentItem:
-            parentPath = self.VariantPrimPathFromItem(parentItem)
-            if not parentPath.endswith('}'):
-                parentPath += '/'
-
-            variants = item.data(COL_VARIANT)
-            variantsString = ''
-            for variantInfo in variants:
-                if variantInfo._enabled:
-                    variantsString += '{'
-                    variantsString += variantInfo._name
-                    variantsString += '='
-                    variantsString += variantInfo._currentSelection
-                    variantsString += '}'
-
-            return parentPath + item.data(COL_NAME) + variantsString
-        else:
+        if not (parentItem := item.parent()):
             return ''
+        parentPath = self.VariantPrimPathFromItem(parentItem)
+        if not parentPath.endswith('}'):
+            parentPath += '/'
+
+        variants = item.data(COL_VARIANT)
+        variantsString = ''
+        for variantInfo in variants:
+            if variantInfo._enabled:
+                variantsString += '{'
+                variantsString += variantInfo._name
+                variantsString += '='
+                variantsString += variantInfo._currentSelection
+                variantsString += '}'
+
+        return parentPath + item.data(COL_NAME) + variantsString
 
     def ItemFromVariantPrimPath(self, variantPrimPath):
         primPath = Sdf.Path(variantPrimPath).StripAllVariantSelections()
@@ -693,8 +673,7 @@ class TreeModel(QAbstractItemModel):
                 # isn't included in srcImportedPrimPaths.
                 for primPath in self._importedPrimPaths[:]:
                     if primPath not in srcImportedPrimPaths:
-                        item = self.ItemFromVariantPrimPath(primPath)
-                        if item:
+                        if item := self.ItemFromVariantPrimPath(primPath):
                             self.SetImportState(item, Qt.Unchecked)
 
                 # Clear the self._importedPrimPaths list.
@@ -705,8 +684,7 @@ class TreeModel(QAbstractItemModel):
                 for primPath in srcImportedPrimPaths:
                     self._importedPrimPaths.append(primPath)
 
-                    item = self.MakeTreeIncludePrimPath(Sdf.Path(primPath))
-                    if item:
+                    if item := self.MakeTreeIncludePrimPath(Sdf.Path(primPath)):
                         self.SetImportState(item, Qt.Checked)
 
     def GetImportedIndexes(self):
@@ -717,8 +695,7 @@ class TreeModel(QAbstractItemModel):
         return indexes
 
     def GetIndexFromPrimPath(self, primPath):
-        item = self._primPathToItemMap.get(Sdf.Path(primPath), None)
-        if item:
+        if item := self._primPathToItemMap.get(Sdf.Path(primPath), None):
             return self.indexFromItem(item)
         return QModelIndex()
 

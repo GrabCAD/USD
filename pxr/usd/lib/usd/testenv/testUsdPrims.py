@@ -25,12 +25,12 @@
 import sys, unittest
 from pxr import Sdf,Usd,Tf
 
-allFormats = ['usd' + x for x in 'ac']
+allFormats = [f'usd{x}' for x in 'ac']
 
 class TestUsdPrim(unittest.TestCase):
     def test_Basic(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('Basics.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'Basics.{fmt}')
             p = s.GetPrimAtPath('/')
             q = s.GetPrimAtPath('/')
             assert p is not q
@@ -63,8 +63,8 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_OverrideMetadata(self):
         for fmt in allFormats:
-            weak = Sdf.Layer.CreateAnonymous('OverrideMetadataTest.'+fmt)
-            strong = Sdf.Layer.CreateAnonymous('OverrideMetadataTest.'+fmt)
+            weak = Sdf.Layer.CreateAnonymous(f'OverrideMetadataTest.{fmt}')
+            strong = Sdf.Layer.CreateAnonymous(f'OverrideMetadataTest.{fmt}')
             stage = Usd.Stage.Open(weak.identifier)
             assert stage.DefinePrim("/Mesh/Child", "Mesh")
 
@@ -75,7 +75,7 @@ class TestUsdPrim(unittest.TestCase):
             p = stage.GetPrimAtPath("/Mesh/Child")
             assert p
             assert p.SetMetadata(
-                "hidden", False), "Failed to set metadata in stronger layer" 
+                "hidden", False), "Failed to set metadata in stronger layer"
             assert p.GetName() == p.GetPath().name
 
     def test_GetPrimStack(self):
@@ -115,10 +115,10 @@ class TestUsdPrim(unittest.TestCase):
     def test_GetCachedPrimBits(self):
         layerFile = 'test.usda'
         layer = Sdf.Layer.FindOrOpen(layerFile)
-        assert layer, 'failed to find "%s"' % layerFile
+        assert layer, f'failed to find "{layerFile}"'
 
         stage = Usd.Stage.Open(layer, load=Usd.Stage.LoadNone)
-        assert stage, 'failed to create stage for %s' % layerFile
+        assert stage, f'failed to create stage for {layerFile}'
 
         # Check various bits.
         root = stage.GetPrimAtPath('/')
@@ -384,7 +384,7 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_ChangeTypeName(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('ChangeTypeName.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'ChangeTypeName.{fmt}')
             foo = s.OverridePrim("/Foo")
 
             # Initialize
@@ -412,13 +412,13 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_HasAuthoredReferences(self):
         for fmt in allFormats:
-            s1 = Usd.Stage.CreateInMemory('HasAuthoredReferences.'+fmt)
+            s1 = Usd.Stage.CreateInMemory(f'HasAuthoredReferences.{fmt}')
             s1.DefinePrim("/Foo", "Mesh")
             s1.DefinePrim("/Bar", "Mesh")
             baz = s1.DefinePrim("/Foo/Baz", "Mesh")
             assert baz.GetReferences().AddReference(s1.GetRootLayer().identifier, "/Bar")
 
-            s2 = Usd.Stage.CreateInMemory('HasAuthoredReferences.'+fmt)
+            s2 = Usd.Stage.CreateInMemory(f'HasAuthoredReferences.{fmt}')
             foo = s2.OverridePrim("/Foo")
             baz = s2.GetPrimAtPath("/Foo/Baz")
 
@@ -485,33 +485,35 @@ class TestUsdPrim(unittest.TestCase):
     def test_PropertyOrder(self):
         layerFile = 'test.usda'
         layer = Sdf.Layer.FindOrOpen(layerFile)
-        assert layer, 'failed to find "%s"' % layerFile
+        assert layer, f'failed to find "{layerFile}"'
 
         stage = Usd.Stage.Open(layer, load=Usd.Stage.LoadNone)
-        assert stage, 'failed to create stage for %s' % layerFile
+        assert stage, f'failed to create stage for {layerFile}'
 
         po = stage.GetPrimAtPath('/PropertyOrder')
         assert po
         attrs = po.GetAttributes()
         # expected order:
         expected = ['A0', 'a1', 'a2', 'A3', 'a4', 'a5', 'a10', 'A20']
-        assert [a.GetName() for a in attrs] == expected, \
-            '%s != %s' % ([a.GetName() for a in attrs], expected)
+        assert [
+            a.GetName() for a in attrs
+        ] == expected, f'{[a.GetName() for a in attrs]} != {expected}'
 
         rels = po.GetRelationships()
         # expected order:
         expected = ['R0', 'r1', 'r2', 'R3', 'r4', 'r5', 'r10', 'R20']
-        assert [r.GetName() for r in rels] == expected, \
-            '%s != %s' % ([r.GetName() for r in rels], expected)
+        assert [
+            r.GetName() for r in rels
+        ] == expected, f'{[r.GetName() for r in rels]} != {expected}'
         
         
     def test_PropertyReorder(self):
         def l(chars):
-            return list(x for x in chars)
+            return list(chars)
 
         for fmt in allFormats:
             sl = Sdf.Layer.CreateAnonymous(fmt)
-            s = Usd.Stage.CreateInMemory('PropertyReorder.'+fmt, sl)
+            s = Usd.Stage.CreateInMemory(f'PropertyReorder.{fmt}', sl)
             f = s.OverridePrim('/foo')
 
             s.SetEditTarget(s.GetRootLayer())
@@ -558,7 +560,7 @@ class TestUsdPrim(unittest.TestCase):
     def test_DefaultPrim(self):
         for fmt in allFormats:
             # No default prim to start.
-            s = Usd.Stage.CreateInMemory('DefaultPrim.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'DefaultPrim.{fmt}')
             assert not s.GetDefaultPrim()
 
             # Set defaultPrim metadata on root layer, but no prim in scene
@@ -639,31 +641,35 @@ class TestUsdPrim(unittest.TestCase):
         orderAfter = ['Baz', 'Foo', 'Bar']
 
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('PrimOrder.'+fmt)
-            children = [s.DefinePrim('/' + p) for p in orderBefore]
+            s = Usd.Stage.CreateInMemory(f'PrimOrder.{fmt}')
+            children = [s.DefinePrim(f'/{p}') for p in orderBefore]
             self.assertEqual(s.GetPseudoRoot().GetChildren(), children)
 
             # Author reorder, assert they are reordered.
             s.GetPseudoRoot().SetMetadata('primOrder', orderAfter)
-            self.assertEqual(s.GetPseudoRoot().GetChildren(),
-                        [s.GetPrimAtPath('/' + p) for p in orderAfter])
+            self.assertEqual(
+                s.GetPseudoRoot().GetChildren(),
+                [s.GetPrimAtPath(f'/{p}') for p in orderAfter],
+            )
 
             # Try the same thing with non-root prims.
-            s = Usd.Stage.CreateInMemory('PrimOrder.'+fmt)
-            children = [s.DefinePrim('/Root/' + p) for p in orderBefore]
+            s = Usd.Stage.CreateInMemory(f'PrimOrder.{fmt}')
+            children = [s.DefinePrim(f'/Root/{p}') for p in orderBefore]
             self.assertEqual(s.GetPrimAtPath('/Root').GetChildren(), children)
 
             # Author reorder, assert they are reordered.
             s.GetPrimAtPath('/Root').SetMetadata('primOrder', orderAfter)
-            self.assertEqual(s.GetPrimAtPath('/Root').GetChildren(),
-                        [s.GetPrimAtPath('/Root/' + p) for p in orderAfter])
+            self.assertEqual(
+                s.GetPrimAtPath('/Root').GetChildren(),
+                [s.GetPrimAtPath(f'/Root/{p}') for p in orderAfter],
+            )
 
     def test_Instanceable(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('Instanceable.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'Instanceable.{fmt}')
             p = s.DefinePrim('/Instanceable', 'Mesh')
             assert not p.IsInstanceable()
-            assert p.GetMetadata('instanceable') == None
+            assert p.GetMetadata('instanceable') is None
             assert not p.HasAuthoredInstanceable()
 
             p.SetInstanceable(True)
@@ -678,7 +684,7 @@ class TestUsdPrim(unittest.TestCase):
 
             p.ClearInstanceable()
             assert not p.IsInstanceable()
-            assert p.GetMetadata('instanceable') == None
+            assert p.GetMetadata('instanceable') is None
             assert not p.HasAuthoredInstanceable()
 
     def test_GetComposedPrimChildrenAsMetadataTest(self):
@@ -692,7 +698,7 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_GetPrimIndex(self):
         def _CreateTestStage(fmt):
-            s = Usd.Stage.CreateInMemory('GetPrimIndex.'+fmt)
+            s = Usd.Stage.CreateInMemory(f'GetPrimIndex.{fmt}')
 
             c = s.DefinePrim('/Class')
 
@@ -736,7 +742,7 @@ class TestUsdPrim(unittest.TestCase):
             
     def test_PseudoRoot(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('PseudoRoot.%s' % fmt)
+            s = Usd.Stage.CreateInMemory(f'PseudoRoot.{fmt}')
             w = s.DefinePrim('/World')
             p = s.GetPrimAtPath('/')
             self.assertTrue(p.IsPseudoRoot())
@@ -747,7 +753,7 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_Deactivation(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('Deactivation.%s' % fmt)
+            s = Usd.Stage.CreateInMemory(f'Deactivation.{fmt}')
             child = s.DefinePrim('/Root/Group/Child')
 
             group = s.GetPrimAtPath('/Root/Group')
@@ -778,8 +784,8 @@ class TestUsdPrim(unittest.TestCase):
         self.assertTrue(Usd.CollectionAPI.IsMultipleApply())
 
         for fmt in allFormats:
-            sessionLayer = Sdf.Layer.CreateNew("SessionLayer.%s" % fmt)
-            s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt, sessionLayer)
+            sessionLayer = Sdf.Layer.CreateNew(f"SessionLayer.{fmt}")
+            s = Usd.Stage.CreateInMemory(f'AppliedSchemas.{fmt}', sessionLayer)
 
             s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
 

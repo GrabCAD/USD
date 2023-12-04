@@ -76,10 +76,8 @@ def GetXcodeDeveloperDirectory():
     if not MacOS():
         return None
 
-    try:
+    with contextlib.suppress(subprocess.CalledProcessError):
         return subprocess.check_output("xcode-select -p").strip()
-    except subprocess.CalledProcessError:
-        pass
     return None
 
 def GetVisualStudioCompilerAndVersion():
@@ -89,12 +87,11 @@ def GetVisualStudioCompilerAndVersion():
     if not Windows():
         return None
 
-    msvcCompiler = find_executable('cl')
-    if msvcCompiler:
-        match = re.search(
-            "Compiler Version (\d+).(\d+).(\d+)", 
-            subprocess.check_output("cl", stderr=subprocess.STDOUT))
-        if match:
+    if msvcCompiler := find_executable('cl'):
+        if match := re.search(
+            "Compiler Version (\d+).(\d+).(\d+)",
+            subprocess.check_output("cl", stderr=subprocess.STDOUT),
+        ):
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
     return None
 
@@ -192,8 +189,7 @@ def RunCMake(context, force, extraArgs = None):
     # On Windows, we need to explicitly specify the generator to ensure we're
     # building a 64-bit project. (Surely there is a better way to do this?)
     if generator is None and Windows():
-        msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
-        if msvcCompilerAndVersion:
+        if msvcCompilerAndVersion := GetVisualStudioCompilerAndVersion():
             _, version = msvcCompilerAndVersion
             if version >= MSVC_2017_COMPILER_VERSION:
                 generator = "Visual Studio 15 2017 Win64"
@@ -202,12 +198,8 @@ def RunCMake(context, force, extraArgs = None):
 
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
-                
-    # On MacOS, enable the use of @rpath for relocatable builds.
-    osx_rpath = None
-    if MacOS():
-        osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
+    osx_rpath = "-DCMAKE_MACOSX_RPATH=ON" if MacOS() else None
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
@@ -234,9 +226,12 @@ def PatchFile(filename, patches):
     for (oldLine, newLine) in patches:
         newLines = [s.replace(oldLine, newLine) for s in newLines]
     if newLines != oldLines:
-        PrintInfo("Patching file {filename} (original in {oldFilename})..."
-                  .format(filename=filename, oldFilename=filename + ".old"))
-        shutil.copy(filename, filename + ".old")
+        PrintInfo(
+            "Patching file {filename} (original in {oldFilename})...".format(
+                filename=filename, oldFilename=f"{filename}.old"
+            )
+        )
+        shutil.copy(filename, f"{filename}.old")
         open(filename, 'w').writelines(newLines)
 
 def DownloadURL(url, context, force, dontExtract = None):
@@ -250,7 +245,7 @@ def DownloadURL(url, context, force, dontExtract = None):
     been extracted."""
     with CurrentWorkingDirectory(context.srcDir):
         # Extract filename from URL and see if file already exists. 
-        filename = url.split("/")[-1]       
+        filename = url.split("/")[-1]
         if force and os.path.exists(filename):
             os.remove(filename)
 
@@ -270,7 +265,7 @@ def DownloadURL(url, context, force, dontExtract = None):
             # Download to a temporary file and rename it to the expected
             # filename when complete. This ensures that incomplete downloads
             # will be retried if the script is run again.
-            tmpFilename = filename + ".tmp"
+            tmpFilename = f"{filename}.tmp"
             if os.path.exists(tmpFilename):
                 os.remove(tmpFilename)
 
@@ -364,7 +359,7 @@ def DownloadURL(url, context, force, dontExtract = None):
             # If extraction failed for whatever reason, assume the
             # archive file was bad and move it aside so that re-running
             # the script will try downloading and extracting again.
-            shutil.move(filename, filename + ".bad")
+            shutil.move(filename, f"{filename}.bad")
             raise RuntimeError("Failed to extract archive {filename}: {err}"
                                .format(filename=filename, err=e))
 
@@ -378,8 +373,10 @@ class Dependency(object):
         self.filesToCheck = files
 
     def Exists(self, context):
-        return all([os.path.isfile(os.path.join(context.instDir, f))
-                    for f in self.filesToCheck])
+        return all(
+            os.path.isfile(os.path.join(context.instDir, f))
+            for f in self.filesToCheck
+        )
 
 class PythonDependency(object):
     def __init__(self, name, getInstructions, moduleNames):
@@ -390,19 +387,17 @@ class PythonDependency(object):
     def Exists(self, context):
         # If one of the modules in our list exists we are good
         for moduleName in self.moduleNames:
-            try:
+            with contextlib.suppress(subprocess.CalledProcessError):
                 # Eat all output; we just care if the import succeeded or not.
                 subprocess.check_output(shlex.split(
                     'python -c "import {module}"'.format(module=moduleName)),
                     stderr=subprocess.STDOUT)
                 return True
-            except subprocess.CalledProcessError:
-                pass
         return False
 
 
 def AnyPythonDependencies(deps):
-    return any([type(d) is PythonDependency for d in deps])
+    return any(type(d) is PythonDependency for d in deps)
 
 ############################################################
 # zlib
@@ -433,7 +428,7 @@ def InstallBoost(context, force):
     dontExtract = ["*/doc/*", "*/libs/*/doc/*"]
 
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
-                                             dontExtract)):
+                                                 dontExtract)):
         bootstrap = "bootstrap.bat" if Windows() else "./bootstrap.sh"
         Run('{bootstrap} --prefix="{instDir}"'
             .format(bootstrap=bootstrap, instDir=context.instDir))
@@ -467,13 +462,8 @@ def InstallBoost(context, force):
 
         if Windows():
             b2_settings.append("toolset=msvc-14.0")
-            
-            # Boost 1.61 doesn't support Visual Studio 2017.  If that's what 
-            # we're using then patch the project-config.jam file to hack in 
-            # support. We'll get a lot of messages about an unknown compiler 
-            # version but it will build.
-            msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
-            if msvcCompilerAndVersion:
+
+            if msvcCompilerAndVersion := GetVisualStudioCompilerAndVersion():
                 compiler, version = msvcCompilerAndVersion
                 if version >= MSVC_2017_COMPILER_VERSION:
                     PatchFile('project-config.jam',
@@ -696,20 +686,13 @@ OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.7.14.zip"
 
 def InstallOpenImageIO(context, force):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
-        extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
-                     '-DOIIO_BUILD_TESTS=OFF',
-                     '-DUSE_PYTHON=OFF',
-                     '-DSTOP_ON_WARNING=OFF']
-
-        # OIIO's FindOpenEXR module circumvents CMake's normal library 
-        # search order, which causes versions of OpenEXR installed in
-        # /usr/local or other hard-coded locations in the module to
-        # take precedence over the version we've built, which would 
-        # normally be picked up when we specify CMAKE_PREFIX_PATH. 
-        # This may lead to undefined symbol errors at build or runtime. 
-        # So, we explicitly specify the OpenEXR we want to use here.
-        extraArgs.append('-DOPENEXR_HOME="{instDir}"'
-                         .format(instDir=context.instDir))
+        extraArgs = [
+            '-DOIIO_BUILD_TOOLS=OFF',
+            '-DOIIO_BUILD_TESTS=OFF',
+            '-DUSE_PYTHON=OFF',
+            '-DSTOP_ON_WARNING=OFF',
+            '-DOPENEXR_HOME="{instDir}"'.format(instDir=context.instDir),
+        ]
 
         # If Ptex support is disabled in USD, disable support in OpenImageIO
         # as well. This ensures OIIO doesn't accidentally pick up a Ptex
@@ -739,12 +722,8 @@ def InstallOpenSubdiv(context, force):
             '-DNO_OPENCL=ON',
             '-DNO_DX=ON',
             '-DNO_TESTS=ON',
+            '-DGLEW_LOCATION="{instDir}"'.format(instDir=context.instDir),
         ]
-
-        # OpenSubdiv's FindGLEW module won't look in CMAKE_PREFIX_PATH, so
-        # we need to explicitly specify GLEW_LOCATION here.
-        extraArgs.append('-DGLEW_LOCATION="{instDir}"'
-                         .format(instDir=context.instDir))
 
         # If Ptex support is disabled in USD, disable support in OpenSubdiv
         # as well. This ensures OSD doesn't accidentally pick up a Ptex
@@ -862,17 +841,17 @@ def InstallUSD(context):
             extraArgs.append('-DBUILD_SHARED_LIBS=ON')
         elif context.buildMonolithic:
             extraArgs.append('-DPXR_BUILD_MONOLITHIC=ON')
-        
+
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
         else:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=OFF')
-    
+
         if context.buildTests:
             extraArgs.append('-DPXR_BUILD_TESTS=ON')
         else:
             extraArgs.append('-DPXR_BUILD_TESTS=OFF')
-            
+
         if context.buildImaging:
             extraArgs.append('-DPXR_BUILD_IMAGING=ON')
             if context.enablePtex:
@@ -898,12 +877,14 @@ def InstallUSD(context):
         if context.buildAlembic:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=ON')
             if context.enableHDF5:
-                extraArgs.append('-DPXR_ENABLE_HDF5_SUPPORT=ON')
-
-                # CMAKE_PREFIX_PATH isn't sufficient for the FindHDF5 module 
-                # to find the HDF5 we've built, so provide an extra hint.
-                extraArgs.append('-DHDF5_ROOT="{instDir}"'
-                                 .format(instDir=context.instDir))
+                extraArgs.extend(
+                    (
+                        '-DPXR_ENABLE_HDF5_SUPPORT=ON',
+                        '-DHDF5_ROOT="{instDir}"'.format(
+                            instDir=context.instDir
+                        ),
+                    )
+                )
             else:
                 extraArgs.append('-DPXR_ENABLE_HDF5_SUPPORT=OFF')
         else:
@@ -1114,7 +1095,7 @@ class InstallContext:
         # Directory where dependencies will be downloaded and extracted
         self.srcDir = (os.path.abspath(args.src) if args.src
                        else os.path.join(self.usdInstDir, "src"))
-        
+
         # Directory where USD and dependencies will be built
         self.buildDir = (os.path.abspath(args.build) if args.build
                          else os.path.join(self.usdInstDir, "build"))
@@ -1144,8 +1125,7 @@ class InstallContext:
         self.buildPython = args.build_python
 
         # - Imaging
-        self.buildImaging = (args.build_imaging == IMAGING or
-                             args.build_imaging == USD_IMAGING)
+        self.buildImaging = args.build_imaging in [IMAGING, USD_IMAGING]
         self.enablePtex = self.buildImaging and args.enable_ptex
 
         # - USD Imaging
@@ -1194,9 +1174,12 @@ if context.numJobs <= 0:
 extraPaths = []
 extraPythonPaths = []
 if Windows():
-    extraPaths.append(os.path.join(context.instDir, "lib"))
-    extraPaths.append(os.path.join(context.instDir, "bin"))
-
+    extraPaths.extend(
+        (
+            os.path.join(context.instDir, "lib"),
+            os.path.join(context.instDir, "bin"),
+        )
+    )
 if extraPaths:
     paths = os.environ.get('PATH', '').split(os.pathsep) + extraPaths
     os.environ['PATH'] = os.pathsep.join(paths)
@@ -1220,7 +1203,7 @@ if context.buildImaging:
 
     requiredDependencies += [JPEG, TIFF, PNG, OPENEXR, GLEW, 
                              OPENIMAGEIO, OPENSUBDIV]
-                             
+
     if context.buildUsdImaging and context.buildPython:
         requiredDependencies += [PYOPENGL, PYSIDE]
 
@@ -1286,7 +1269,7 @@ if context.buildDocs:
     if not find_executable("doxygen"):
         PrintError("doxygen not found -- please install it and adjust your PATH")
         sys.exit(1)
-        
+
     if not find_executable("dot"):
         PrintError("dot not found -- please install graphviz and adjust your "
                    "PATH")
@@ -1297,9 +1280,9 @@ if PYSIDE in requiredDependencies:
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
-    found_pysideUic = any([find_executable(p) for p in pysideUic])
+    found_pysideUic = any(find_executable(p) for p in pysideUic)
     pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
-    found_pyside2Uic = any([find_executable(p) for p in pyside2Uic])
+    found_pyside2Uic = any(find_executable(p) for p in pyside2Uic)
     if not found_pysideUic and not found_pyside2Uic:
         PrintError("pyside-uic not found -- please install PySide and adjust "
                    "your PATH. (Note that this program may be named {0} "
@@ -1367,11 +1350,9 @@ Building with settings:
 if args.dry_run:
     sys.exit(0)
 
-# Scan for any dependencies that the user is required to install themselves
-# and print those instructions first.
-pythonDependencies = \
-    [dep for dep in dependenciesToBuild if type(dep) is PythonDependency]
-if pythonDependencies:
+if pythonDependencies := [
+    dep for dep in dependenciesToBuild if type(dep) is PythonDependency
+]:
     for dep in pythonDependencies:
         Print(dep.getInstructions())
     sys.exit(1)
@@ -1406,14 +1387,10 @@ except Exception as e:
     sys.exit(1)
 
 # Done. Print out a final status message.
-requiredInPythonPath = set([
-    os.path.join(context.usdInstDir, "lib", "python")
-])
+requiredInPythonPath = {os.path.join(context.usdInstDir, "lib", "python")}
 requiredInPythonPath.update(extraPythonPaths)
 
-requiredInPath = set([
-    os.path.join(context.usdInstDir, "bin")
-])
+requiredInPath = {os.path.join(context.usdInstDir, "bin")}
 requiredInPath.update(extraPaths)
 
 if Windows():
@@ -1440,7 +1417,7 @@ Print("""
 if context.buildMaya:
     Print("See documentation at http://openusd.org/docs/Maya-USD-Plugins.html "
           "for setting up the Maya plugin.\n")
-    
+
 if context.buildKatana:
     Print("See documentation at http://openusd.org/docs/Katana-USD-Plugins.html "
           "for setting up the Katana plugin.\n")

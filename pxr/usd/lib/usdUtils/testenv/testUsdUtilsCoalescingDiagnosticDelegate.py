@@ -29,35 +29,35 @@ from pxr import Tf, Sdf, UsdUtils
 def _genWarning():
     Tf.Warn('.')
 
-EXPECTED_LINE_NO   = 30 
+EXPECTED_LINE_NO   = 30
 EXPECTED_FUNC_NAME = '__main__._genWarning'
 
 delegate = UsdUtils.CoalescingDiagnosticDelegate()
 
 # Test dumping of diagnostics (this will be compared in baseline/output.txt)
-for i in range(0,10):
+for _ in range(0,10):
     _genWarning()
 
 delegate.DumpCoalescedDiagnosticsToStdout()
 
 # Test collection of unfiltered diagnostics
-for i in range(0,3):
+for _ in range(0,3):
     _genWarning()
 
 unfiltered = delegate.TakeUncoalescedDiagnostics()
 assert len(unfiltered) == 3
-for i in range(0,3):
-    assert unfiltered[0].sourceLineNumber == EXPECTED_LINE_NO 
+for _ in range(0,3):
+    assert unfiltered[0].sourceLineNumber == EXPECTED_LINE_NO
     assert unfiltered[0].sourceFunction == EXPECTED_FUNC_NAME
 
 # Test collection of filtered diagnostics
-for i in range(0,8):
+for _ in range(0,8):
     _genWarning()
 filtered = delegate.TakeCoalescedDiagnostics()
 assert len(filtered) == 1
 filteredDiagnostic = filtered[0]
 
-assert filteredDiagnostic.sharedItem.sourceLineNumber == EXPECTED_LINE_NO 
+assert filteredDiagnostic.sharedItem.sourceLineNumber == EXPECTED_LINE_NO
 assert filteredDiagnostic.sharedItem.sourceFunction == EXPECTED_FUNC_NAME 
 
 import pprint

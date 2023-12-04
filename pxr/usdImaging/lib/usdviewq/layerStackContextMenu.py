@@ -95,7 +95,7 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
            and os.path.isfile(getattr(self._item, "layerPath"))):
             fileSize = os.path.getsize(getattr(self._item, "layerPath"))
         if fileSize:
-            return "Open Layer In Editor (%s)" % PrettyFormatSize(fileSize)
+            return f"Open Layer In Editor ({PrettyFormatSize(fileSize)})"
         else:
             return "Open Layer In Editor"
 

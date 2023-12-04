@@ -99,13 +99,13 @@ class TestGfQuaternion(unittest.TestCase):
 
         q *= 10
         self.assertEqual(q, Gf.Quaternion(10,Gf.Vec3d(20,30,40)))
-        q = q * 10
+        q *= 10
         self.assertEqual(q, Gf.Quaternion(100,Gf.Vec3d(200,300,400)))
-        q = 10 * q
+        q *= 10
         self.assertEqual(q, Gf.Quaternion(1000,Gf.Vec3d(2000,3000,4000)))
         q /= 100
         self.assertEqual(q, Gf.Quaternion(10,Gf.Vec3d(20,30,40)))
-        q = q / 10
+        q /= 10
         self.assertEqual(q, Gf.Quaternion(1,Gf.Vec3d(2,3,4)))
 
         q += q

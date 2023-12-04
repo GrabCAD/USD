@@ -69,18 +69,15 @@ def _GetDefiningLayerAndPrim(stage, schemaName):
     """ Searches the stage LayerStack for a prim whose name is equal to
         schemaName.
     """
-    # SchemaBase is not actually defined in the core schema file, but this
-    # behavior causes the code generator to produce correct C++ inheritance.
     if schemaName == 'SchemaBase':
         return (stage.GetLayerStack()[-1], None)
-    
-    else:
-        for layer in stage.GetLayerStack():
-            for sdfPrim in layer.rootPrims:
-                if sdfPrim.name == schemaName:
-                    return (layer, sdfPrim)
 
-    raise Exception("Could not find the defining layer for schema: %s" % schemaName)
+    for layer in stage.GetLayerStack():
+        for sdfPrim in layer.rootPrims:
+            if sdfPrim.name == schemaName:
+                return (layer, sdfPrim)
+
+    raise Exception(f"Could not find the defining layer for schema: {schemaName}")
                     
 
 def _GetLibMetadata(layer):
@@ -168,11 +165,10 @@ def _CamelCase(aString):
     """Returns the given string (camelCase or ProperCase) in camelCase,
         stripping out any non-alphanumeric characters.
     """
-    if len(aString) > 1:
-        pcase = _ProperCase(aString)
-        return pcase[0].lower() + pcase[1:]
-    else:
+    if len(aString) <= 1:
         return aString.lower()
+    pcase = _ProperCase(aString)
+    return pcase[0].lower() + pcase[1:]
 
     
 Token = namedtuple('Token', ['id', 'value', 'desc'])
@@ -197,7 +193,7 @@ class PropInfo(object):
         self.apiName    = self.customData.get('apiName', self.name)
         self.apiGet     = self.customData.get('apiGetImplementation', self.CodeGen.Generated)
         if self.apiGet not in [self.CodeGen.Generated, self.CodeGen.Custom]:
-            print ("Token '%s' is not valid." % self.apiGet)
+            print(f"Token '{self.apiGet}' is not valid.")
         self.rawName    = sdfProp.name
         self.doc        = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
         self.custom     = sdfProp.custom
@@ -218,13 +214,12 @@ class AttrInfo(PropInfo):
     def __init__(self, sdfProp):
         super(AttrInfo, self).__init__(sdfProp)
         self.allowedTokens = sdfProp.GetInfo('allowedTokens')
-        
+
         self.variability = str(sdfProp.variability).replace('Sdf.', 'Sdf')
         self.fallback = sdfProp.default
         self.cppType = sdfProp.typeName.cppTypeName
-        self.usdType = "SdfValueTypeNames->%s" % (
-            valueTypeNameToStr[sdfProp.typeName])
-        
+        self.usdType = f"SdfValueTypeNames->{valueTypeNameToStr[sdfProp.typeName]}"
+
         self.details = [('C++ Type', self.cppType),
                         ('Usd Type', self.usdType),
                         ('Variability', self.variability),
@@ -232,8 +227,8 @@ class AttrInfo(PropInfo):
                          if self.fallback is None else str(self.fallback))]
         if self.allowedTokens:
             self.details.append(('\\ref ' + \
-                _GetTokensPrefix(sdfProp.layer) + \
-                'Tokens "Allowed Values"', str(self.allowedTokens)))
+                    _GetTokensPrefix(sdfProp.layer) + \
+                    'Tokens "Allowed Values"', str(self.allowedTokens)))
 
 def _ExtractNames(sdfPrim, customData):
     usdPrimTypeName = sdfPrim.path.name
@@ -261,27 +256,27 @@ def _IsTyped(p):
 
 class ClassInfo(object):
     def __init__(self, usdPrim, sdfPrim):
-        # Error handling
-        errorPrefix = ('Invalid schema definition at ' 
-                       + '<' + str(sdfPrim.path) + '>')
         errorSuffix = ('See '
                        'https://graphics.pixar.com/usd/docs/api/'
                        '_usd__page__generating_schemas.html '
                        'for more information.\n')
+        errorPrefix = (
+            'Invalid schema definition at ' + '<' + str(sdfPrim.path) + '>'
+        )
         errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
 
         # First validate proper class naming...
-        if (sdfPrim.typeName != sdfPrim.path.name and
-            sdfPrim.typeName != ''):
-            raise Exception(errorMsg("Code generation requires that every instantiable "
-                                     "class's name must match its declared type "
-                                     "('%s' and '%s' do not match.)" % 
-                                     (sdfPrim.typeName, sdfPrim.path.name)))
-        
+        if sdfPrim.typeName not in [sdfPrim.path.name, '']:
+            raise Exception(
+                errorMsg(
+                    f"Code generation requires that every instantiable class's name must match its declared type ('{sdfPrim.typeName}' and '{sdfPrim.path.name}' do not match.)"
+                )
+            )
+
         # NOTE: usdPrim should ONLY be used for querying information regarding
         # the class's parent in order to avoid duplicating class members during
         # code generation.
-        inherits = usdPrim.GetMetadata('inheritPaths') 
+        inherits = usdPrim.GetMetadata('inheritPaths')
         inheritsList = _ListOpToList(inherits)
 
         # We do not allow multiple inheritance 
@@ -323,7 +318,7 @@ class ClassInfo(object):
             parentCustomData = dict(parentPrim.customData)
             (parentUsdName, parentClassName,
              self.parentCppClassName, self.parentBaseFileName) = \
-             _ExtractNames(parentPrim, parentCustomData)
+                 _ExtractNames(parentPrim, parentCustomData)
         # Only Typed and APISchemaBase are allowed to have no inherits, since 
         # these are the core base types for all the typed and API schemas 
         # respectively.
@@ -348,12 +343,12 @@ class ClassInfo(object):
         self.isAPISchemaBase = self.cppClassName == 'UsdAPISchemaBase'
 
         self.isApi = not self.isTyped and not self.isConcrete and \
-                not self.isAPISchemaBase
+                    not self.isAPISchemaBase
         self.apiSchemaType = self.customData.get(Usd.Tokens.apiSchemaType, 
                 Usd.Tokens.singleApply if self.isApi else None)
 
         if self.isApi and \
-           self.apiSchemaType not in [Usd.Tokens.nonApplied, 
+               self.apiSchemaType not in [Usd.Tokens.nonApplied, 
                                       Usd.Tokens.singleApply,
                                       Usd.Tokens.multipleApply]:
             raise Exception(errorMsg("CustomData 'apiSchemaType' is %s. It must"
@@ -372,16 +367,16 @@ class ClassInfo(object):
                                      'nor provide a typename(API).'))
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
-            not sdfPrim.path.name.endswith('API'):
+                not sdfPrim.path.name.endswith('API'):
             raise Exception(errorMsg('API schemas must be named with an API suffix.'))
-        
+
 
         if self.isApi and not self.isAppliedAPISchema and self.isPrivateApply:
             raise Exception(errorMsg("Non-applied API schema cannot be tagged "
                 "as private-apply"))
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
-            (not self.parentCppClassName):
+                (not self.parentCppClassName):
             raise Exception(errorMsg("API schemas must explicitly inherit from "
                     "UsdAPISchemaBase."))
 
@@ -390,23 +385,23 @@ class ClassInfo(object):
                                      'apiSchemaType value.'))
 
         if (not self.isApi or not self.isAppliedAPISchema) and \
-                self.isPrivateApply:
+                    self.isPrivateApply:
             raise Exception(errorMsg('Non API schemas or non-applied API '
                                      'schemas cannot be marked with '
                                      'isPrivateApply, only applied API schemas '
                                      'have an Apply() method generated. '))
          
     def GetHeaderFile(self):
-        return self.baseFileName + '.h'
+        return f'{self.baseFileName}.h'
 
     def GetParentHeaderFile(self):
-        return self.parentBaseFileName + '.h'
+        return f'{self.parentBaseFileName}.h'
 
     def GetCppFile(self):
-        return self.baseFileName + '.cpp'
+        return f'{self.baseFileName}.cpp'
 
     def GetWrapFile(self):
-        return 'wrap' + self.className + '.cpp'
+        return f'wrap{self.className}.cpp'
 
 
 #------------------------------------------------------------------------------#
@@ -438,18 +433,14 @@ def _ValidateFields(spec):
     return False
 
 def GetClassInfo(classes, cppClassName):
-    for c in classes:
-        if c.cppClassName == cppClassName:
-            return c
-    return None
+    return next((c for c in classes if c.cppClassName == cppClassName), None)
 
 def ParseUsd(usdFilePath):
     sdfLayer = Sdf.Layer.FindOrOpen(usdFilePath)
     stage = Usd.Stage.Open(sdfLayer)
-    classes = []
-
     hasInvalidFields = False
 
+    classes = []
     # PARSE CLASSES
     for sdfPrim in sdfLayer.rootPrims:
         if sdfPrim.name == "Typed" or sdfPrim.specifier != Sdf.SpecifierClass:
@@ -480,80 +471,69 @@ def ParseUsd(usdFilePath):
                 # Assert unique attribute names
                 if attrInfo.name in classInfo.attrs: 
                     raise Exception(
-                        'Schema Attribute names must be unique, '
-                        'irrespective of namespacing. '
-                        'Duplicate name encountered: %s.%s' %
-                        (classInfo.usdPrimTypeName, attrInfo.name))
+                        f'Schema Attribute names must be unique, irrespective of namespacing. Duplicate name encountered: {classInfo.usdPrimTypeName}.{attrInfo.name}'
+                    )
                 elif attrInfo.apiName in attrApiNames:
                     raise Exception(
-                        'Schema Attribute API names must be unique. '
-                        'Duplicate apiName encountered: %s.%s' %
-                        (classInfo.usdPrimTypeName, attrInfo.apiName))
+                        f'Schema Attribute API names must be unique. Duplicate apiName encountered: {classInfo.usdPrimTypeName}.{attrInfo.apiName}'
+                    )
                 else:
                     attrApiNames.append(attrInfo.apiName)
                     classInfo.attrs[attrInfo.name] = attrInfo
                     classInfo.attrOrder.append(attrInfo.name)
 
-            # Relationship
             else:
                 relInfo = RelInfo(sdfProp)
 
                 # Assert unique relationship names
                 if relInfo.name in classInfo.rels: 
                     raise Exception(
-                        'Schema Relationship names must be unique, '
-                        'irrespective of namespacing. '
-                        'Duplicate name encountered: %s.%s' %
-                        (classInfo.usdPrimTypeName, relInfo.name))
+                        f'Schema Relationship names must be unique, irrespective of namespacing. Duplicate name encountered: {classInfo.usdPrimTypeName}.{relInfo.name}'
+                    )
                 elif relInfo.apiName in relApiNames:
                     raise Exception(
-                        'Schema Relationship API names must be unique. '
-                        'Duplicate apiName encountered: %s.%s' %
-                        (classInfo.usdPrimTypeName, relInfo.apiName))
+                        f'Schema Relationship API names must be unique. Duplicate apiName encountered: {classInfo.usdPrimTypeName}.{relInfo.apiName}'
+                    )
                 else:
                     relApiNames.append(relInfo.apiName)
                     classInfo.rels[relInfo.name] = relInfo
                     classInfo.relOrder.append(relInfo.name)
 
-    
+
     for classInfo in classes:
         # If this is an applied API schema that does not inherit from 
         # UsdAPISchemaBase directly, ensure that the parent class is also 
         # an applied API Schema.
         if classInfo.isApi and classInfo.parentCppClassName!='UsdAPISchemaBase':
-            parentClassInfo = GetClassInfo(classes, classInfo.parentCppClassName)
-            if parentClassInfo:
+            if parentClassInfo := GetClassInfo(
+                classes, classInfo.parentCppClassName
+            ):
                 if parentClassInfo.isAppliedAPISchema != \
                         classInfo.isAppliedAPISchema:
-                    raise Exception("API schema '%s' inherits from incompatible "
-                        "base API schema '%s'. Both must be either applied API "
-                        "schemas or non-applied API schemas." %
-                        (classInfo.cppClassName, parentClassInfo.cppClassName))
+                    raise Exception(
+                        f"API schema '{classInfo.cppClassName}' inherits from incompatible base API schema '{parentClassInfo.cppClassName}'. Both must be either applied API schemas or non-applied API schemas."
+                    )
                 if parentClassInfo.isMultipleApply != \
                         classInfo.isMultipleApply:
-                    raise Exception("API schema '%s' inherits from incompatible "
-                        "base API schema '%s'. Both must be either single-apply "
-                        "or multiple-apply." % (classInfo.cppClassName,
-                        parentClassInfo.cppClassName))
+                    raise Exception(
+                        f"API schema '{classInfo.cppClassName}' inherits from incompatible base API schema '{parentClassInfo.cppClassName}'. Both must be either single-apply or multiple-apply."
+                    )
             else:
                 parentClassTfType = Tf.Type.FindByName(
                         classInfo.parentCppClassName)
                 if parentClassTfType and parentClassTfType != Tf.Type.Unknown:
                     if classInfo.isAppliedAPISchema != \
                         Usd.SchemaRegistry.IsAppliedAPISchema(parentClassTfType):
-                        raise Exception("API schema '%s' inherits from "
-                            "incompatible base API schema '%s'. Both must be "
-                            "either applied API schemas or non-applied API "
-                            " schemas." % (classInfo.cppClassName,
-                            parentClassInfo.cppClassName))
+                        raise Exception(
+                            f"API schema '{classInfo.cppClassName}' inherits from incompatible base API schema '{parentClassInfo.cppClassName}'. Both must be either applied API schemas or non-applied API  schemas."
+                        )
                     if classInfo.isMultipleApply != \
                         Usd.SchemaRegistry.IsMultipleApplyAPISchema(
                                 parentClassTfType):
-                        raise Exception("API schema '%s' inherits from "
-                        "incompatible base API schema '%s'. Both must be either" 
-                        " single-apply or multiple-apply." % 
-                        (classInfo.cppClassName,  parentClassInfo.cppClassName))
-        
+                        raise Exception(
+                            f"API schema '{classInfo.cppClassName}' inherits from incompatible base API schema '{parentClassInfo.cppClassName}'. Both must be either single-apply or multiple-apply."
+                        )
+
     if hasInvalidFields:
         raise Exception('Invalid fields specified in schema.')
 
@@ -630,11 +610,27 @@ def _AddToken(tokenDict, tokenId, val, desc):
     # If token is a reserved word in either language, append with underscore.
     # 'interface' is not a reserved word but is a macro on Windows when using
     # COM so we treat it as reserved.
-    reserved = set(['class', 'default', 'def', 'case', 'switch', 'break',
-                    'if', 'else', 'struct', 'template', 'interface',
-                    'float', 'double', 'int', 'char', 'long', 'short'])
+    reserved = {
+        'class',
+        'default',
+        'def',
+        'case',
+        'switch',
+        'break',
+        'if',
+        'else',
+        'struct',
+        'template',
+        'interface',
+        'float',
+        'double',
+        'int',
+        'char',
+        'long',
+        'short',
+    }
     if tokenId in reserved:
-        tokenId = tokenId + '_'
+        tokenId = f'{tokenId}_'
     if tokenId in tokenDict:
         token = tokenDict[tokenId]
 
@@ -644,11 +640,10 @@ def _AddToken(tokenDict, tokenId, val, desc):
              'Token identifiers must map to exactly one token value. '
              'One-to-Many mapping encountered: %s maps to \"%s\" and \"%s\"'
              % (token.id, token.value, val))
-        
+
         # Update Description
-        tokenDict[tokenId] = token._replace(
-            desc=desc + ', ' + token.desc)
-    
+        tokenDict[tokenId] = token._replace(desc=f'{desc}, {token.desc}')
+
     else:
         tokenDict[tokenId] = Token(tokenId, val, desc)
 
@@ -664,33 +659,40 @@ def GatherTokens(classes, libName, libTokens):
             cls.tokens.add(attr.name)
             _AddToken(tokenDict, attr.name, attr.rawName, cls.cppClassName)
 
-            
+
             # Add default value (if token type) to token set
             if attr.usdType == 'SdfValueTypeNames->Token' and attr.fallback:
                 fallbackName = _CamelCase(attr.fallback)
-                desc = 'Default value for %s::Get%sAttr()' % \
-                       (cls.cppClassName, _ProperCase(attr.name))
+                desc = f'Default value for {cls.cppClassName}::Get{_ProperCase(attr.name)}Attr()'
                 cls.tokens.add(fallbackName)
                 _AddToken(tokenDict, fallbackName, attr.fallback, desc)
-            
+
             # Add Allowed Tokens for this attribute to token set
             if attr.allowedTokens:
                 for val in attr.allowedTokens:
                     tokenId = _CamelCase(val)
-                    desc = 'Possible value for %s::Get%sAttr()' % \
-                           (cls.cppClassName, _ProperCase(attr.name))
+                    desc = f'Possible value for {cls.cppClassName}::Get{_ProperCase(attr.name)}Attr()'
                     cls.tokens.add(tokenId)
                     _AddToken(tokenDict, tokenId, val, desc)
-                    
+
         # Add Relationship Names to token set
         for rel in cls.rels.values():
             cls.tokens.add(rel.name)
             _AddToken(tokenDict, rel.name, rel.rawName, cls.cppClassName)
-            
+
     # Add library-wide tokens to token set
     for token, tokenInfo in libTokens.iteritems():
-        _AddToken(tokenDict, token, tokenInfo.get("value", token), _SanitizeDoc(tokenInfo.get("doc",
-            "Special token for the %s library." % libName), ' '))
+        _AddToken(
+            tokenDict,
+            token,
+            tokenInfo.get("value", token),
+            _SanitizeDoc(
+                tokenInfo.get(
+                    "doc", f"Special token for the {libName} library."
+                ),
+                ' ',
+            ),
+        )
 
     return sorted(tokenDict.values(), key=lambda token: token.id.lower())
 
@@ -857,7 +859,8 @@ def _MakeFlattenedRegistryLayer(filePath):
     # all the type names.
 
     def mangle(typeName):
-        return '__MANGLED_TO_AVOID_BUILTINS__' + typeName
+        return f'__MANGLED_TO_AVOID_BUILTINS__{typeName}'
+
     def demangle(typeName):
         return typeName.replace('__MANGLED_TO_AVOID_BUILTINS__', '')
 
@@ -964,10 +967,9 @@ def InitializeResolver():
     resourcePaths = set()
     pr = Plug.Registry()
     for t in pr.GetAllDerivedTypes('UsdSchemaBase'):
-        plugin = pr.GetPluginForType(t)
-        if plugin:
+        if plugin := pr.GetPluginForType(t):
             resourcePaths.add(plugin.resourcePath)
-    
+
     # The sorting shouldn't matter here, but we do it for consistency
     # across runs.
     Ar.DefaultResolver.SetDefaultSearchPath(sorted(list(resourcePaths)))

@@ -45,10 +45,10 @@ def VerifyUsdFileFormat(usdFileName, underlyingFormatId):
     # Copy the file to a temporary location and replace the extension with
     # the expected format, then try to open it.
     import tempfile
-    (tmpFile, tmpFileName) = \
-        tempfile.mkstemp(
-            prefix=os.path.splitext(os.path.basename(usdFileName))[0],
-            suffix='.' + underlyingFormatId)
+    (tmpFile, tmpFileName) = tempfile.mkstemp(
+        prefix=os.path.splitext(os.path.basename(usdFileName))[0],
+        suffix=f'.{underlyingFormatId}',
+    )
     os.close(tmpFile)
 
     shutil.copyfile(usdFileName, tmpFileName)
@@ -122,7 +122,7 @@ class TestUsdFileFormats(unittest.TestCase):
         # Verify that opening a .usd file, authoring changes, and saving it
         # maintains the same underlying file format.
         def _TestLayerOpenAndSave(srcFilename, expectedFileFormat):
-            dstFilename = 'testUsdLayerSave_%s.usd' % expectedFileFormat
+            dstFilename = f'testUsdLayerSave_{expectedFileFormat}.usd'
             shutil.copyfile(srcFilename, dstFilename)
             layer = Sdf.Layer.FindOrOpen(dstFilename)
             self.assertEqual(GetUnderlyingUsdFileFormat(layer), expectedFileFormat)

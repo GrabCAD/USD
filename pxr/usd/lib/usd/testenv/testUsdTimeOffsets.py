@@ -25,11 +25,7 @@
 import sys, os, unittest
 from pxr import Sdf, Usd, Pcp, Vt, Tf, Gf
 
-allFormats = ['usd' + x for x in 'ac']
-
-# --------------------------------------------------------------------------- #
-# Support code for generating & verifying offsets
-# --------------------------------------------------------------------------- #
+allFormats = [f'usd{x}' for x in 'ac']
 
 class AdjustedPrim(object):
     """A convenience object for bundling up a prim,stage and offset.
@@ -49,10 +45,7 @@ def MakePrim(stage, refLyr, path, offset, scale, matchPath=False):
     p.stage = stage
     p.layerOffset = Sdf.LayerOffset(offset, scale)
 
-    refPath = "/Foo"
-    if matchPath:
-        refPath = path
-
+    refPath = path if matchPath else "/Foo"
     ref = Sdf.Reference(refLyr.identifier, refPath, p.layerOffset)
     assert p.prim.GetReferences().AddReference(ref)
     return p
@@ -62,7 +55,7 @@ def GenTestLayer(testId, fmt):
     """Generates a layer with three time samples at 1.0, 2.0, and 10.0
     at </Foo.attr>.
     """
-    l = Sdf.Layer.CreateNew("sourceData-" + testId + "." + fmt)
+    l = Sdf.Layer.CreateNew(f"sourceData-{testId}.{fmt}")
     stage = Usd.Stage.Open(l)
 
     stage.OverridePrim("/Foo")
@@ -224,9 +217,9 @@ class TestUsdTimeOffsets(unittest.TestCase):
             # and we test authoring a time sample into the reference via an
             # EditTarget, as well as to the subLayer.  In both cases we check that
             # the time value was correctly transformed.
-            rootLayer = Sdf.Layer.CreateAnonymous('root.'+fmt)
-            subLayer = Sdf.Layer.CreateAnonymous('sub.'+fmt)
-            refLayer = Sdf.Layer.CreateAnonymous('ref.'+fmt)
+            rootLayer = Sdf.Layer.CreateAnonymous(f'root.{fmt}')
+            subLayer = Sdf.Layer.CreateAnonymous(f'sub.{fmt}')
+            refLayer = Sdf.Layer.CreateAnonymous(f'ref.{fmt}')
 
             # add subLayer to rootLayer and give it a layer offset.
             subOffset = Sdf.LayerOffset(scale=3.0, offset=4.0)

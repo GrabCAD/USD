@@ -89,25 +89,25 @@ class StateSource(object):
         if valueType is not prop.propType:
             if valueType is int and prop.propType is float:
                 pass # ints are valid for float types.
-            elif prop.propType in (str, unicode) and valueType in (str, unicode):
-                pass # str and unicode can be used interchangeably.
-            else:
-                print("Value {} has type {} but state property {} has type {}.".format(
-                        repr(value), valueType, repr(prop.name), prop.propType),
-                        file=sys.stderr)
-                print("    Using default value {}.".format(repr(prop.default)),
-                        file=sys.stderr)
+            elif prop.propType not in (str, unicode) or valueType not in (
+                str,
+                unicode,
+            ):
+                print(
+                    f"Value {repr(value)} has type {valueType} but state property {repr(prop.name)} has type {prop.propType}.",
+                    file=sys.stderr,
+                )
+                print(f"    Using default value {repr(prop.default)}.", file=sys.stderr)
                 return False
 
-        # Make sure value passes custom validation. Otherwise, use default value.
         if prop.validator(value):
             return True
-        else:
-            print("Value {} did not pass custom validation for state property {}.".format(
-                    repr(value), repr(prop.name)), file=sys.stderr)
-            print("    Using default value {}.".format(repr(prop.default)),
-                    file=sys.stderr)
-            return False
+        print(
+            f"Value {repr(value)} did not pass custom validation for state property {repr(prop.name)}.",
+            file=sys.stderr,
+        )
+        print(f"    Using default value {repr(prop.default)}.", file=sys.stderr)
+        return False
 
     def _saveState(self):
         """Saves the source's state to the settings object's state buffer."""
@@ -119,20 +119,17 @@ class StateSource(object):
         # Validate state properties.
         for name, value in tuple(newState.items()):
             if name not in self._stateSourceProperties:
-                print("State property {} not defined. It will be removed.".format(
-                        repr(name)), file=sys.stderr)
+                print(
+                    f"State property {repr(name)} not defined. It will be removed.",
+                    file=sys.stderr,
+                )
                 del newState[name]
             prop = self._stateSourceProperties[name]
-            if self._typeCheck(value, prop):
-                newState[name] = value
-            else:
-                newState[name] = prop.default
-
+            newState[name] = value if self._typeCheck(value, prop) else prop.default
         # Make sure no state properties were forgotten.
         for prop in self._stateSourceProperties.values():
             if prop.name not in newState:
-                print("State property {} not saved.".format(repr(prop.name)),
-                        file=sys.stderr)
+                print(f"State property {repr(prop.name)} not saved.", file=sys.stderr)
 
         # Update the real state dict with the new state. This preserves unused
         # data loaded from the state file.
@@ -149,8 +146,7 @@ class StateSource(object):
 
         # Make sure there are no conflicting state properties.
         if name in self._stateSourceProperties:
-            raise RuntimeError("State property name {} already in use.".format(
-                    repr(name)))
+            raise RuntimeError(f"State property name {repr(name)} already in use.")
 
         # Grab state property type from default value if it was not defined.
         if propType is None:
@@ -158,11 +154,13 @@ class StateSource(object):
 
         # Make sure default value is valid.
         if not isinstance(default, propType):
-            raise RuntimeError("Default value {} does not match type {}.".format(
-                    repr(default), repr(propType)))
+            raise RuntimeError(
+                f"Default value {repr(default)} does not match type {repr(propType)}."
+            )
         if not validator(default):
-            raise RuntimeError("Default value {} does not pass custom validation "
-                    "for state property {}.".format(repr(default), repr(name)))
+            raise RuntimeError(
+                f"Default value {repr(default)} does not pass custom validation for state property {repr(name)}."
+            )
 
         prop = _StateProp(name, default, propType, validator)
         self._stateSourceProperties[name] = prop
@@ -170,10 +168,7 @@ class StateSource(object):
         # Load the value from the state dict and validate it.
         state = self._getState()
         value = state.get(name, default)
-        if self._typeCheck(value, prop):
-            return value
-        else:
-            return prop.default
+        return value if self._typeCheck(value, prop) else prop.default
 
     def onSaveState(self, state):
         """Save the source's state properties to a dict."""
@@ -212,7 +207,7 @@ class Settings(StateSource):
                     self._versionsStateBuffer = json.load(fp)
             except IOError as e:
                 if os.path.isfile(self._stateFilePath):
-                    print("Error opening state file: " + str(e), file=sys.stderr)
+                    print(f"Error opening state file: {str(e)}", file=sys.stderr)
                 else:
                     print("State file not found, a new one will be created.",
                             file=sys.stderr)
@@ -249,7 +244,7 @@ class Settings(StateSource):
                     json.dump(self._versionsStateBuffer, fp,
                             indent=2, separators=(",", ": "))
             except IOError as e:
-                print("Could not save state file: " + str(e), file=sys.stderr)
+                print(f"Could not save state file: {str(e)}", file=sys.stderr)
 
     def onSaveState(self, state):
         """Settings object has no state properties."""

@@ -31,5 +31,5 @@ if __name__ == '__main__':
     try:
         Usdviewq.Launcher().Run()
     except Usdviewq.InvalidUsdviewOption as e:
-        print("ERROR: " + e.message, file=sys.stderr)
+        print(f"ERROR: {e.message}", file=sys.stderr)
         sys.exit(1)

@@ -29,8 +29,7 @@ isWindows = (platform.system() == 'Windows')
 
 def _findExe(name):
     from distutils.spawn import find_executable
-    cmd = find_executable(name)
-    if cmd:
+    if cmd := find_executable(name):
         return cmd
     if isWindows:
         # find_executable under Windows only returns *.EXE files
@@ -60,7 +59,7 @@ def _findEditorTools(usdFileName, readOnly):
                  _findExe("emacs") or
                  _findExe("vim") or
                  _findExe("notepad"))
-    
+
     if not editorCmd:
         sys.exit("Error: Couldn't find a suitable text editor to use. Expected " 
                  "$USD_EDITOR or $EDITOR to be set, or emacs/vim/notepad to "
@@ -68,9 +67,8 @@ def _findEditorTools(usdFileName, readOnly):
 
     # special handling for emacs users
     if 'emacs' in editorCmd:
-        title = '"usdedit %s%s"' % ("--noeffect " if readOnly else "",
-                                    usdFileName)
-        editorCmd += " -name %s" % title
+        title = f'"usdedit {"--noeffect " if readOnly else ""}{usdFileName}"'
+        editorCmd += f" -name {title}"
 
     return (usdcatCmd, editorCmd)
 
@@ -98,9 +96,9 @@ def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
 def _editTemporaryFile(editorCmd, usdaFileName):
     # check the timestamp before updating a file's mtime
     initialTimeStamp = os.path.getmtime(usdaFileName)
-    os.system(editorCmd + ' ' + usdaFileName)
+    os.system(f'{editorCmd} {usdaFileName}')
     newTimeStamp = os.path.getmtime(usdaFileName)
-    
+
     # indicate whether the file was changed
     return initialTimeStamp != newTimeStamp
 
@@ -110,8 +108,7 @@ def _writeOutChanges(temporaryFileName, permanentFileName):
     temporaryLayer = Sdf.Layer.FindOrOpen(temporaryFileName)
 
     if not temporaryLayer:
-        sys.exit("Error: Failed to open temporary layer %s." \
-                 %temporaryFileName)
+        sys.exit(f"Error: Failed to open temporary layer {temporaryFileName}.")
 
     # Note that we attempt to overwrite the permanent file's contents
     # rather than explicitly creating a new layer. This avoids aligning

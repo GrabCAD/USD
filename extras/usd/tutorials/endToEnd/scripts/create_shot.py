@@ -56,7 +56,7 @@ def main():
 
     if os.path.exists(outputDir):
         if not force:
-            parser.error('outputDir "%s" exists.  Use -f to override' % outputDir)
+            parser.error(f'outputDir "{outputDir}" exists.  Use -f to override')
     else:
         os.makedirs(outputDir)
 
